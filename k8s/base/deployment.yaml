@@ -16,7 +16,7 @@ spec:
       containers:
         - name: backend-container
           # Usa la imagen que ya lograste subir a Docker Hub
-          image: dacaitac/backend-app:latest
+          image: dacaitac/backend-app:v0
           imagePullPolicy: Always
           ports:
             - containerPort: 1015
