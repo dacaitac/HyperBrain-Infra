@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: hyperbrain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-app
+  template:
+    metadata:
+      labels:
+        app: backend-app
+    spec:
+      containers:
+        - name: backend-container
+          # Usa la imagen que ya lograste subir a Docker Hub
+          image: dacaitac/backend-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 1015
+          envFrom:
+            - secretRef:
+                name: backend-secrets
