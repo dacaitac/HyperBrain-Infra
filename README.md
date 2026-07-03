@@ -3,7 +3,37 @@
 Infraestructura del ecosistema **HyperBrain**: Docker Compose, migraciones SQL (Supabase),
 colas SQS (LocalStack) y gestión de secretos (SOPS + age).
 
-## Arquitectura objetivo (MVP)
+## Quick Start
+
+**Prerrequisitos:** Docker ≥ 24, AWS CLI v2, `jq`
+
+```bash
+# 1. Copiar variables de entorno (solo la primera vez)
+cp .env.example .env
+
+# 2. Levantar infraestructura obligatoria
+docker compose up -d
+
+# 3. Verificar que todo quedó healthy (esperar ~60s)
+docker compose ps
+
+# 4. Ejecutar la prueba reina
+./scripts/smoke-test.sh
+```
+
+**Perfiles opcionales:**
+
+```bash
+docker compose --profile app up -d      # + HyperBrain-core (CI/integración)
+docker compose --profile ui up -d       # + Appsmith (dashboards 4DX)
+docker compose --profile email up -d    # + Inbucket (testing de email GoTrue)
+```
+
+> **Nota:** el check #4 del smoke test (`sys_user`) falla hasta que se aplique el DDL v1 ([S0-02](https://github.com/dacaitac/HyperBrain-docs/issues/2)).
+
+---
+
+## Arquitectura (MVP)
 
 El MVP corre 100 % en Docker Compose sobre `daniel-ubuntu`
 ([ADR-006](https://github.com/dacaitac/HyperBrain-docs)). Orden de arranque:
@@ -14,13 +44,13 @@ PostgreSQL (+ pgvector)  →  Supabase (GoTrue + PostgREST)  →  HyperBrain-cor
 
 | Servicio | Imagen | Puerto | Health |
 | :--- | :--- | :--- | :--- |
-| `postgres` | `postgres:16-alpine` | 5432 | `pg_isready` |
-| `supabase-auth` (GoTrue) | `supabase/gotrue` | 9999 | `/health` |
-| `supabase-rest` (PostgREST) | `postgrest/postgrest` | 8000 | `/` |
+| `postgres` | `pgvector/pgvector:pg16` | 5432 | `pg_isready` |
+| `gotrue` (Supabase Auth) | `supabase/gotrue` | 9999 | `/health` |
+| `postgrest` (Supabase REST) | `postgrest/postgrest` | 3000 | `/` |
 | `localstack` | `localstack/localstack` | 4566 | `/_localstack/health` |
 | `hyperbrain-core` | `ghcr.io/dacaitac/hyperbrain-core` | 8080 | `/actuator/health` |
 
-Colas SQS (LocalStack, RNF-02): `sync-events.fifo`, `core-events`, `ia-jobs`, cada una con su DLQ.
+Colas SQS (LocalStack, ADR-001): `sync-events.fifo`, `core-events`, `ia-jobs`, cada una con su DLQ.
 
 ## Secretos
 

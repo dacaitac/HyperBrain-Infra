@@ -1,0 +1,173 @@
+services:
+
+  # ── Core data layer ────────────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: hyperbrain-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      - "5432:5432"
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -q"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Message queue ──────────────────────────────────────────────────────────
+  localstack:
+    image: localstack/localstack:3
+    container_name: hyperbrain-localstack
+    restart: unless-stopped
+    environment:
+      SERVICES: sqs
+    ports:
+      - "4566:4566"
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  sqs-init:
+    image: amazon/aws-cli:latest
+    container_name: hyperbrain-sqs-init
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_ENDPOINT_URL: http://localstack:4566
+    entrypoint: ["/bin/sh", "/scripts/init-queues.sh"]
+    volumes:
+      - ./infrastructure/localstack/init-queues.sh:/scripts/init-queues.sh:ro
+    mem_limit: 64m
+    restart: "no"
+
+  # ── Supabase minimal (GoTrue + PostgREST) ──────────────────────────────────
+  # ADR-006: only GoTrue and PostgREST; no Realtime/Functions/Storage/Studio
+  gotrue:
+    image: supabase/gotrue:v2.151.0
+    container_name: hyperbrain-gotrue
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      PORT: 9999
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?search_path=auth"
+      GOTRUE_SITE_URL: ${GOTRUE_SITE_URL:-http://localhost:3000}
+      GOTRUE_URI_ALLOW_LIST: ""
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL:-http://localhost:9999}
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_SMS_AUTOCONFIRM: "true"
+    ports:
+      - "9999:9999"
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9999/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  postgrest:
+    image: postgrest/postgrest:v12.2.3
+    container_name: hyperbrain-postgrest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: ${PGRST_DB_ANON_ROLE:-anon}
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_SERVER_PORT: 3000
+    ports:
+      - "3000:3000"
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/3000' 2>/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── Optional profiles ──────────────────────────────────────────────────────
+  hyperbrain-core:
+    profiles: [app]
+    image: ghcr.io/dacaitac/hyperbrain-core:latest
+    container_name: hyperbrain-core
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 5
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_SQS_ENDPOINT_OVERRIDE: http://localstack:4566
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  appsmith:
+    profiles: [ui]
+    image: appsmith/appsmith-ce:latest
+    container_name: hyperbrain-appsmith
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - appsmith_data:/appsmith-stacks
+    mem_limit: 1g
+
+  inbucket:
+    profiles: [email]
+    image: inbucket/inbucket:3.0.4
+    container_name: hyperbrain-inbucket
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "2500:2500"
+      - "1100:1100"
+    mem_limit: 64m
+
+volumes:
+  postgres_data:
+    name: hyperbrain-postgres-data
+  appsmith_data:
+    name: hyperbrain-appsmith-data
