@@ -1,47 +1,45 @@
-# HyperBrain Infrastructure Management
+# HyperBrain-Infra
 
-Este repositorio gestiona el despliegue de **HyperBrain** en el cluster local mediante Kubernetes y Kustomize.
+Infraestructura del ecosistema **HyperBrain**: Docker Compose, migraciones SQL (Supabase),
+colas SQS (LocalStack) y gestión de secretos (SOPS + age).
 
-## Estructura
-- `k8s/base/`: Manifiestos base (Namespace, Deployment, Service, Ingress).
-- `k8s/base/kustomization.yaml`: Configuración de Kustomize para manejar la imagen y tags.
+## Arquitectura objetivo (MVP)
 
-## Cómo cambiar la imagen (Variable)
-Para actualizar la versión del backend, simplemente edita el archivo `k8s/base/kustomization.yaml` en la sección `images`:
-```yaml
-images:
-  - name: dacaitac/backend-app
-    newTag: v1.2.3  # <--- Cambia esto
+El MVP corre 100 % en Docker Compose sobre `daniel-ubuntu`
+([ADR-006](https://github.com/dacaitac/HyperBrain-docs)). Orden de arranque:
+
+```
+PostgreSQL (+ pgvector)  →  Supabase (GoTrue + PostgREST)  →  HyperBrain-core
 ```
 
-## Configuración de CI/CD (GitHub Actions)
-He creado un ServiceAccount (`github-actions-sa`) en el cluster para automatizar el despliegue.
+| Servicio | Imagen | Puerto | Health |
+| :--- | :--- | :--- | :--- |
+| `postgres` | `postgres:16-alpine` | 5432 | `pg_isready` |
+| `supabase-auth` (GoTrue) | `supabase/gotrue` | 9999 | `/health` |
+| `supabase-rest` (PostgREST) | `postgrest/postgrest` | 8000 | `/` |
+| `localstack` | `localstack/localstack` | 4566 | `/_localstack/health` |
+| `hyperbrain-core` | `ghcr.io/dacaitac/hyperbrain-core` | 8080 | `/actuator/health` |
 
-### Secretos en GitHub:
-Para que GitHub pueda desplegar, añade estos **Actions Secrets** a tu repositorio de Infra:
+Colas SQS (LocalStack, RNF-02): `sync-events.fifo`, `core-events`, `ia-jobs`, cada una con su DLQ.
 
-1. **KUBECONFIG_DATA**: El contenido de tu archivo kubeconfig en base64.
-2. **K8S_SERVER**: La URL de tu cluster (puedes usar tu MagicDNS de Tailscale: `https://daniel-z370p-d3.tail95d990.ts.net:6443`).
+## Secretos
 
-### Ejemplo de GitHub Action (.github/workflows/deploy.yml):
-```yaml
-name: Deploy HyperBrain
-on:
-  push:
-    branches: [ main ]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set up Kustomize
-      run: curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
-    - name: Update Image Tag
-      run: |
-        cd k8s/base
-        ../../kustomize edit set image dacaitac/backend-app=${{ secrets.DOCKER_IMAGE_TAG }}
-    - name: Deploy to K8s
-      run: |
-        echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > kubeconfig
-        kubectl apply -k k8s/base --kubeconfig=kubeconfig
-```
+- `.env` con valores reales: **nunca** en git (ver `.gitignore`).
+- `.env.example`: plantilla con claves vacías, sí versionada.
+- `secrets.enc.env`: cifrado con SOPS + age, versionable.
+
+## Kubernetes
+
+Los manifests `k8s/` son un objetivo de aprendizaje **post-MVP**
+([ADR-006](https://github.com/dacaitac/HyperBrain-docs)); no se trabajan durante el MVP sin ADR previo.
+
+## Documentación
+
+La documentación de ingeniería vive en **HyperBrain-docs**. `CLAUDE.md` (symlink al brain de IA)
+contiene las reglas de operación, migraciones y gestión de secretos.
+
+---
+
+> **Nota:** el contenido legacy (stack Kafka + Apache Superset del proyecto anterior "SOPFC") fue
+> eliminado al reiniciar el repo. La arquitectura vigente usa SQS ([ADR-001](https://github.com/dacaitac/HyperBrain-docs))
+> y Appsmith en lugar de Superset.

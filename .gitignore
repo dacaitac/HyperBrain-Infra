@@ -1,0 +1,29 @@
+# Environment & secrets — NUNCA subir valores reales
+.env
+.env.*
+!.env.example
+
+# Secretos cifrados con SOPS+age SÍ pueden versionarse:
+!secrets.enc.env
+
+# SOPS / age keys
+*.agekey
+keys.txt
+
+# Certificates & keys
+*.pem
+*.key
+*.crt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Docker / runtime
+**/data/
+*.log
