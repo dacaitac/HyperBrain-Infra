@@ -27,3 +27,9 @@ Thumbs.db
 # Docker / runtime
 **/data/
 *.log
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan

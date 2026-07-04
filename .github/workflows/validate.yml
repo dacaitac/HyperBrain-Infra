@@ -3,7 +3,7 @@ name: Validate Infra
 on: [push]
 
 jobs:
-  validate:
+  validate-compose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,3 +15,31 @@ jobs:
           POSTGRES_PASSWORD: placeholder
           POSTGRES_DB: hyperbrain
           JWT_SECRET: placeholder-jwt-secret-for-compose-config-validation-only
+
+  validate-terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check terraform directory
+        id: tf-exists
+        run: |
+          if [ -d "terraform/sqs" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Terraform
+        if: steps.tf-exists.outputs.exists == 'true'
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init (no backend)
+        if: steps.tf-exists.outputs.exists == 'true'
+        working-directory: terraform/sqs
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        if: steps.tf-exists.outputs.exists == 'true'
+        working-directory: terraform/sqs
+        run: terraform validate

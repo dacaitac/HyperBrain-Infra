@@ -25,7 +25,7 @@ set_redrive() {
   local tmp="/tmp/redrive_${queue}.json"
 
   cat > "${tmp}" << EOF
-{"RedrivePolicy":"{\"deadLetterTargetArn\":\"${dlq_arn}\",\"maxReceiveCount\":\"5\"}"}
+{"RedrivePolicy":"{\"deadLetterTargetArn\":\"${dlq_arn}\",\"maxReceiveCount\":\"3\"}"}
 EOF
 
   aws --endpoint-url="${ENDPOINT}" sqs set-queue-attributes \
@@ -38,14 +38,14 @@ EOF
 echo "=== Creating SQS queues ==="
 
 # DLQs must be created before main queues reference their ARNs
-create_queue "sync-events-dlq.fifo" --attributes "FifoQueue=true,ContentBasedDeduplication=true"
-create_queue "core-events-dlq"
-create_queue "ia-jobs-dlq"
+create_queue "sync-events-dlq.fifo" --attributes "FifoQueue=true,ContentBasedDeduplication=false,MessageRetentionPeriod=1209600,VisibilityTimeout=30"
+create_queue "core-events-dlq" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=30"
+create_queue "ia-jobs-dlq" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=120"
 
-# Main queues
-create_queue "sync-events.fifo" --attributes "FifoQueue=true,ContentBasedDeduplication=true"
-create_queue "core-events"
-create_queue "ia-jobs"
+# Main queues — sync-events.fifo uses explicit MessageDeduplicationId (ContentBasedDeduplication=false)
+create_queue "sync-events.fifo" --attributes "FifoQueue=true,ContentBasedDeduplication=false,MessageRetentionPeriod=1209600,VisibilityTimeout=30"
+create_queue "core-events" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=30"
+create_queue "ia-jobs" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=120"
 
 # Attach redrive policies (DLQs already exist, ARNs are deterministic in LocalStack)
 set_redrive "sync-events.fifo"  "sync-events-dlq.fifo"

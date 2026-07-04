@@ -1,0 +1,63 @@
+name: PR — Terraform Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: terraform/sqs
+        run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: terraform/sqs
+        run: terraform plan -no-color
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        continue-on-error: true
+
+      - name: Post plan to PR
+        uses: actions/github-script@v7
+        env:
+          PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
+          PLAN_STDERR: ${{ steps.plan.outputs.stderr }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const stdout = process.env.PLAN_STDOUT || '';
+            const stderr = process.env.PLAN_STDERR || '';
+            const output = (stdout + stderr).trim();
+            const truncated = output.length > 60000
+              ? output.substring(0, 60000) + '\n\n...[truncated — see Actions log for full output]'
+              : output;
+            const outcome = '${{ steps.plan.outcome }}';
+            const icon = outcome === 'success' ? '✅' : '❌';
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `#### Terraform Plan \`terraform/sqs\` ${icon}\n\n<details><summary>Mostrar plan</summary>\n\n\`\`\`hcl\n${truncated}\n\`\`\`\n\n</details>\n\n**Estado:** \`${outcome}\` | **Actor:** @${{ github.actor }}\n\n> ⚠️ Este plan usa estado vacío (local). El estado real vive en \`daniel-ubuntu\`. Ejecutar \`terraform plan\` localmente antes de hacer apply.`
+            });
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
