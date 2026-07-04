@@ -1,0 +1,19 @@
+{
+  "_comment": "Sample SentinelAPI → sync-events.fifo payload for local dev injection via awslocal (S0-07). Replace checksum with SHA-256(entity_id + operation + canonical payload) when testing end-to-end.",
+  "schema_version": "1.0",
+  "event_id": "evt-00000000-0000-0000-0000-000000000001",
+  "source_system": "APPLE",
+  "entity_type": "REMINDER",
+  "entity_id": "reminder-apple-local-001",
+  "operation": "CREATED",
+  "occurred_at": "2026-07-04T08:00:00Z",
+  "checksum": "sha256-placeholder",
+  "payload": {
+    "title": "Review Sprint 0 issues",
+    "notes": "Check GitHub Project #2 for pending items — S0-02, S0-07",
+    "due_date": "2026-07-04T09:00:00Z",
+    "completed": false,
+    "list_id": "list-hyperbrain-local-001",
+    "list_name": "HyperBrain"
+  }
+}
