@@ -48,7 +48,7 @@ PostgreSQL (+ pgvector)  →  Supabase (GoTrue + PostgREST)  →  HyperBrain-cor
 | :--- | :--- | :--- | :--- |
 | `postgres` | `pgvector/pgvector:pg16` | 5432 | `pg_isready` |
 | `gotrue` (Supabase Auth) | `supabase/gotrue` | 9999 | `/health` |
-| `postgrest` (Supabase REST) | `postgrest/postgrest` | 3000 | `/` |
+| `postgrest` (Supabase REST) | `postgrest/postgrest` | 3001 | `/` |
 | `localstack` | `localstack/localstack` | 4566 | `/_localstack/health` |
 | `hyperbrain-core` | `ghcr.io/dacaitac/hyperbrain-core` | 8080 | `/actuator/health` |
 
