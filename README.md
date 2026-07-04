@@ -1,5 +1,7 @@
 # HyperBrain-Infra
 
+[![Validate Infra](https://github.com/dacaitac/HyperBrain-Infra/actions/workflows/validate.yml/badge.svg)](https://github.com/dacaitac/HyperBrain-Infra/actions/workflows/validate.yml)
+
 Infraestructura del ecosistema **HyperBrain**: Docker Compose, migraciones SQL (Supabase),
 colas SQS (LocalStack) y gestión de secretos (SOPS + age).
 

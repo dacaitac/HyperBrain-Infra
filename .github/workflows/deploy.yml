@@ -1,0 +1,38 @@
+name: Deploy Infra
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, daniel-ubuntu]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      # ~/hyperbrain-deploy is the persistent runtime directory on daniel-ubuntu.
+      # Its .env holds real secrets and is created once, by hand, outside of CI —
+      # this sync never touches it.
+      - name: Sync compose + migrations to the persistent deploy directory
+        run: |
+          mkdir -p ~/hyperbrain-deploy
+          rsync -a --delete --exclude '.env' docker-compose.yml infrastructure supabase ~/hyperbrain-deploy/
+
+      - name: Apply compose changes
+        working-directory: /home/danielc/hyperbrain-deploy
+        run: |
+          docker compose --env-file .env pull
+          docker compose --env-file .env up -d --remove-orphans
+
+      - name: Apply DDL migrations (only if supabase/migrations/ changed)
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q '^supabase/migrations/'; then
+            supabase db push --password "${{ secrets.DB_PASSWORD }}"
+          else
+            echo "No migration changes — skipping db push."
+          fi
+
+      - name: Health check critical services
+        run: |
+          docker compose --env-file /home/danielc/hyperbrain-deploy/.env -f /home/danielc/hyperbrain-deploy/docker-compose.yml ps postgres | grep -q healthy
