@@ -106,12 +106,9 @@ services:
       # 3000 is taken by an unrelated grafana container already running on daniel-ubuntu.
       - "3001:3000"
     mem_limit: 128m
-    healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/3000' 2>/dev/null"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
+    # No healthcheck: the official image ships no shell (not even /bin/sh) and no
+    # curl/wget, so there is nothing a CMD/CMD-SHELL probe can execute inside the
+    # container. Verified reachable externally via `curl http://localhost:3001/`.
 
   # ── Optional profiles ──────────────────────────────────────────────────────
   hyperbrain-core:
@@ -138,7 +135,8 @@ services:
       - "8080:8080"
     mem_limit: 512m
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/actuator/health"]
+      # eclipse-temurin:*-jre-alpine has no curl; busybox wget is present instead.
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5
