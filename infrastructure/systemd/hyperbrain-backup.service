@@ -1,0 +1,16 @@
+[Unit]
+Description=HyperBrain PostgreSQL backup
+Documentation=https://github.com/dacaitac/HyperBrain-Infra/blob/main/docs/backup-restore.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# EnvironmentFile is created by install-backup.sh; fill in real values before enabling.
+EnvironmentFile=/etc/hyperbrain/backup.env
+ExecStart=/opt/hyperbrain/scripts/hyperbrain-backup.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hyperbrain-backup
+# Raise an alert immediately on failure — do not retry silently.
+SuccessExitStatus=0
