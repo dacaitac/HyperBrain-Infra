@@ -70,17 +70,20 @@ find "${NAS_DIR}/monthly" -maxdepth 1 -name "*.dump" | sort | head -n -"${RETAIN
 
 # ── off-site (Sunday only) ───────────────────────────────────────────────────
 if [[ "${dow}" == "7" ]]; then
-    [[ -z "${AGE_RECIPIENT}" ]] && die "BACKUP_AGE_RECIPIENT not set — cannot encrypt off-site copy"
-    which age   > /dev/null 2>&1 || die "'age' binary not found (install: apt install age)"
-    which rclone > /dev/null 2>&1 || die "'rclone' binary not found (https://rclone.org/install/)"
+    if [[ -z "${AGE_RECIPIENT}" ]]; then
+        log "WARNING: BACKUP_AGE_RECIPIENT not set — skipping off-site upload. Set it in /etc/hyperbrain/backup.env."
+    else
+        which age    > /dev/null 2>&1 || die "'age' binary not found (install: apt install age)"
+        which rclone > /dev/null 2>&1 || die "'rclone' binary not found (https://rclone.org/install/)"
 
-    ENCRYPTED="/tmp/hyperbrain_${today}.dump.age"
-    log "Encrypting ${WEEKLY_FILE:-${DUMP_FILE}} for off-site"
-    age -r "${AGE_RECIPIENT}" -o "${ENCRYPTED}" "${WEEKLY_FILE:-${DUMP_FILE}}"
-    log "Uploading to ${RCLONE_REMOTE}:${OFFSITE_PATH}/"
-    rclone copy "${ENCRYPTED}" "${RCLONE_REMOTE}:${OFFSITE_PATH}/"
-    rm -f "${ENCRYPTED}"
-    log "Off-site upload complete"
+        ENCRYPTED="/tmp/hyperbrain_${today}.dump.age"
+        log "Encrypting ${WEEKLY_FILE:-${DUMP_FILE}} for off-site"
+        age -r "${AGE_RECIPIENT}" -o "${ENCRYPTED}" "${WEEKLY_FILE:-${DUMP_FILE}}"
+        log "Uploading to ${RCLONE_REMOTE}:${OFFSITE_PATH}/"
+        rclone copy "${ENCRYPTED}" "${RCLONE_REMOTE}:${OFFSITE_PATH}/"
+        rm -f "${ENCRYPTED}"
+        log "Off-site upload complete"
+    fi
 fi
 
 # ── prometheus sentinel ───────────────────────────────────────────────────────
