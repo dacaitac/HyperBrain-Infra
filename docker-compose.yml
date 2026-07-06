@@ -129,7 +129,9 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
-      AWS_SQS_ENDPOINT_OVERRIDE: http://localstack:4566
+      # Dev default: LocalStack. For real AWS SQS (e.g. to receive events from SentinelAPI on the
+      # Mac Mini) set AWS_SQS_ENDPOINT_OVERRIDE=https://sqs.<region>.amazonaws.com + real creds in .env.
+      AWS_SQS_ENDPOINT_OVERRIDE: ${AWS_SQS_ENDPOINT_OVERRIDE:-http://localstack:4566}
       SERVER_PORT: 8080
     ports:
       - "8080:8080"

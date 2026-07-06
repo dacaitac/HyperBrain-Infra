@@ -28,6 +28,16 @@ resource "aws_sqs_queue" "sync_events_dlq" {
   tags = local.common_tags
 }
 
+resource "aws_sqs_queue" "apple_commands_dlq" {
+  name                        = "apple-commands-dlq.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = false
+  message_retention_seconds   = 1209600 # 14 days
+  visibility_timeout_seconds  = 30
+
+  tags = local.common_tags
+}
+
 resource "aws_sqs_queue" "core_events_dlq" {
   name                       = "core-events-dlq"
   message_retention_seconds  = 1209600 # 14 days
@@ -55,6 +65,21 @@ resource "aws_sqs_queue" "sync_events" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.sync_events_dlq.arn
+    maxReceiveCount     = 3
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_sqs_queue" "apple_commands" {
+  name                        = "apple-commands.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = false # Deduplication via explicit MessageDeduplicationId
+  message_retention_seconds   = 1209600
+  visibility_timeout_seconds  = 30
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.apple_commands_dlq.arn
     maxReceiveCount     = 3
   })
 

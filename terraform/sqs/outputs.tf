@@ -6,6 +6,11 @@ output "sync_events_url" {
   value       = aws_sqs_queue.sync_events.url
 }
 
+output "apple_commands_url" {
+  description = "URL of apple-commands.fifo (SQS_APPLE_COMMANDS_URL / APPLE_COMMANDS_QUEUE_URL)"
+  value       = aws_sqs_queue.apple_commands.url
+}
+
 output "core_events_url" {
   description = "URL of core-events (SQS_CORE_EVENTS_URL)"
   value       = aws_sqs_queue.core_events.url
@@ -19,6 +24,11 @@ output "ia_jobs_url" {
 output "sync_events_arn" {
   description = "ARN of sync-events.fifo"
   value       = aws_sqs_queue.sync_events.arn
+}
+
+output "apple_commands_arn" {
+  description = "ARN of apple-commands.fifo"
+  value       = aws_sqs_queue.apple_commands.arn
 }
 
 output "core_events_arn" {
