@@ -109,6 +109,38 @@ Contrato completo del evento: [HU-09 #14](https://github.com/dacaitac/HyperBrain
 - `.env.example`: plantilla con claves vacías, sí versionada.
 - `secrets.enc.env`: cifrado con SOPS + age, versionable.
 
+## Terraform
+
+Dos módulos independientes:
+
+| Módulo | Ruta | Propósito |
+| :--- | :--- | :--- |
+| `sqs` | `terraform/sqs/` | 8 colas SQS + DLQs + usuarios IAM en AWS real (producción) |
+| `oci` | `terraform/oci/` | VM OCI Free Tier (Ampere A1, 2 vCPU / 12 GB) + VCN + Security List (laboratorio post-MVP) |
+
+### Módulo SQS (producción)
+
+```bash
+cd terraform/sqs
+
+terraform plan                 # Ver cambios sin aplicar
+terraform apply                # Aplicar (pide confirmación)
+terraform output               # Ver ARNs y URLs de colas (para .env y SentinelAPI)
+```
+
+### Módulo OCI (post-MVP — laboratorio)
+
+```bash
+cd terraform/oci
+
+terraform plan                 # Ver cambios sin aplicar
+terraform apply                # Aprovisionar / actualizar instancia
+terraform output public_ip     # IP pública de la VM (accesible vía Tailscale)
+```
+
+> `terraform.tfvars` y `terraform.tfstate` están gitignoreados. Copiar `terraform.tfvars.example`
+> y completar con los valores reales. El módulo OCI no se modifica sin ADR previo ([ADR-006](https://github.com/dacaitac/HyperBrain-docs)).
+
 ## Kubernetes
 
 Los manifests `k8s/` son un objetivo de aprendizaje **post-MVP**
