@@ -6,28 +6,29 @@ global:
 
 scrape_configs:
 
-  # ── OCI VM ────────────────────────────────────────────────────────────────────
-  - job_name: node-exporter-oci
+  # ── node-exporter — all hosts in one job so community dashboards work ─────────
+  # Template variable $node auto-populates from instance label.
+  - job_name: node-exporter
     static_configs:
       - targets: ['node-exporter:9100']
         labels:
           instance: hyperbrain-oci
-
-  # ── daniel-ubuntu (via Tailscale 100.83.47.113) ───────────────────────────────
-  - job_name: node-exporter-ubuntu
-    static_configs:
       - targets: ['100.83.47.113:9100']
-    relabel_configs:
-      - target_label: instance
-        replacement: daniel-ubuntu
+        labels:
+          instance: daniel-ubuntu
+      - targets: ['100.74.180.105:9100']  # pending: mac-metrics LaunchAgent (HU-13 #18)
+        labels:
+          instance: mac-mini
 
+  # ── cadvisor — container metrics (daniel-ubuntu, port 9080 avoids core conflict)
   - job_name: cadvisor
     static_configs:
-      - targets: ['100.83.47.113:8080']
+      - targets: ['100.83.47.113:9080']
     relabel_configs:
       - target_label: instance
         replacement: daniel-ubuntu
 
+  # ── scaphandre — energy consumption (daniel-ubuntu) ──────────────────────────
   - job_name: scaphandre
     fallback_scrape_protocol: PrometheusText0.0.4
     static_configs:
@@ -35,12 +36,3 @@ scrape_configs:
     relabel_configs:
       - target_label: instance
         replacement: daniel-ubuntu
-
-  # ── mac-mini (via Tailscale 100.74.180.105) ───────────────────────────────────
-  # Requires: mac-metrics LaunchAgent installed (HU-13 #18)
-  - job_name: node-exporter-mac
-    static_configs:
-      - targets: ['100.74.180.105:9100']
-    relabel_configs:
-      - target_label: instance
-        replacement: mac-mini

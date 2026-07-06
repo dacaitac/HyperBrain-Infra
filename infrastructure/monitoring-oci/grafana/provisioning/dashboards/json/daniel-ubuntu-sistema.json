@@ -31,7 +31,7 @@
         "y": 0
       },
       "id": 1,
-      "title": "\ud83d\udda5\ufe0f  System Overview",
+      "title": "🖥️  System Overview",
       "type": "row"
     },
     {
@@ -507,7 +507,7 @@
         "y": 5
       },
       "id": 10,
-      "title": "\u26a1  CPU",
+      "title": "⚡  CPU",
       "type": "row"
     },
     {
@@ -916,7 +916,7 @@
         "y": 22
       },
       "id": 16,
-      "title": "\ud83e\udde0  Memory (RAM & Swap)",
+      "title": "🧠  Memory (RAM & Swap)",
       "type": "row"
     },
     {
@@ -1230,7 +1230,7 @@
         "y": 30
       },
       "id": 21,
-      "title": "\ud83d\udcbe  Storage & Disks",
+      "title": "💾  Storage & Disks",
       "type": "row"
     },
     {
@@ -1343,7 +1343,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "\u25bc.*"
+              "options": "▼.*"
             },
             "properties": [
               {
@@ -1380,14 +1380,14 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_read_bytes_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), \"disk_label\", \"NAS \u2014 Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema \u2014 ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext \u2014 Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup \u2014 Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
-          "legendFormat": "\u25b2 {{disk_label}}",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_read_bytes_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), \"disk_label\", \"NAS — Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema — ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext — Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup — Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
+          "legendFormat": "▲ {{disk_label}}",
           "refId": "A"
         },
         {
           "datasource": "Prometheus",
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(-irate(node_disk_written_bytes_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), \"disk_label\", \"NAS \u2014 Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema \u2014 ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext \u2014 Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup \u2014 Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
-          "legendFormat": "\u25bc {{disk_label}}",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(-irate(node_disk_written_bytes_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), \"disk_label\", \"NAS — Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema — ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext — Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup — Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
+          "legendFormat": "▼ {{disk_label}}",
           "refId": "B"
         }
       ],
@@ -1459,13 +1459,13 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_reads_completed_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), \"disk_label\", \"NAS \u2014 Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema \u2014 ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext \u2014 Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup \u2014 Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_reads_completed_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), \"disk_label\", \"NAS — Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema — ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext — Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup — Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
           "legendFormat": "R {{disk_label}}",
           "refId": "A"
         },
         {
           "datasource": "Prometheus",
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(-irate(node_disk_writes_completed_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), \"disk_label\", \"NAS \u2014 Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema \u2014 ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext \u2014 Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup \u2014 Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(-irate(node_disk_writes_completed_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), \"disk_label\", \"NAS — Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema — ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext — Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup — Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
           "legendFormat": "W {{disk_label}}",
           "refId": "B"
         }
@@ -1546,7 +1546,7 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_io_time_seconds_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]) * 100, \"disk_label\", \"NAS \u2014 Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema \u2014 ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext \u2014 Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup \u2014 Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_io_time_seconds_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]) * 100, \"disk_label\", \"NAS — Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema — ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext — Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup — Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
           "legendFormat": "{{disk_label}}",
           "refId": "A"
         }
@@ -1619,13 +1619,13 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_read_time_seconds_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]) / clamp_min(irate(node_disk_reads_completed_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), 0.001), \"disk_label\", \"NAS \u2014 Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema \u2014 ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext \u2014 Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup \u2014 Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_read_time_seconds_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]) / clamp_min(irate(node_disk_reads_completed_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), 0.001), \"disk_label\", \"NAS — Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema — ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext — Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup — Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
           "legendFormat": "Read {{disk_label}}",
           "refId": "A"
         },
         {
           "datasource": "Prometheus",
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_write_time_seconds_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]) / clamp_min(irate(node_disk_writes_completed_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), 0.001), \"disk_label\", \"NAS \u2014 Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema \u2014 ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext \u2014 Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup \u2014 Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(irate(node_disk_write_time_seconds_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]) / clamp_min(irate(node_disk_writes_completed_total{device=~\"sda|sdb|sdc|sdd|dm-0|dm-1|dm-2\"}[5m]), 0.001), \"disk_label\", \"NAS — Seagate 1.4T\", \"device\", \"sda\"), \"disk_label\", \"Sistema — ADATA SSD 112G\", \"device\", \"sdb\"), \"disk_label\", \"NAS-Ext — Seagate 466G\", \"device\", \"sdc\"), \"disk_label\", \"Backup — Toshiba 932G\", \"device\", \"sdd\"), \"disk_label\", \"NAS (LUKS)\", \"device\", \"dm-0\"), \"disk_label\", \"NAS-Ext (LUKS)\", \"device\", \"dm-1\"), \"disk_label\", \"Backup (LUKS)\", \"device\", \"dm-2\")",
           "legendFormat": "Write {{disk_label}}",
           "refId": "B"
         }
@@ -1642,7 +1642,7 @@
         "y": 47
       },
       "id": 27,
-      "title": "\ud83c\udf10  Network",
+      "title": "🌐  Network",
       "type": "row"
     },
     {
@@ -1711,13 +1711,13 @@
         {
           "datasource": "Prometheus",
           "expr": "irate(node_network_receive_bytes_total{device!~\"lo|veth.*|docker.*|br-.*|cali.*\"}[5m])",
-          "legendFormat": "\u2193 RX {{device}}",
+          "legendFormat": "↓ RX {{device}}",
           "refId": "A"
         },
         {
           "datasource": "Prometheus",
           "expr": "-irate(node_network_transmit_bytes_total{device!~\"lo|veth.*|docker.*|br-.*|cali.*\"}[5m])",
-          "legendFormat": "\u2191 TX {{device}}",
+          "legendFormat": "↑ TX {{device}}",
           "refId": "B"
         }
       ],
@@ -2059,13 +2059,13 @@
         {
           "datasource": "Prometheus",
           "expr": "irate(node_network_receive_packets_total{device!~\"lo|veth.*|docker.*|br-.*\"}[5m])",
-          "legendFormat": "\u2193 RX Packets {{device}}",
+          "legendFormat": "↓ RX Packets {{device}}",
           "refId": "A"
         },
         {
           "datasource": "Prometheus",
           "expr": "-irate(node_network_transmit_packets_total{device!~\"lo|veth.*|docker.*|br-.*\"}[5m])",
-          "legendFormat": "\u2191 TX Packets {{device}}",
+          "legendFormat": "↑ TX Packets {{device}}",
           "refId": "B"
         }
       ],
@@ -2081,7 +2081,7 @@
         "y": 60
       },
       "id": 34,
-      "title": "\ud83c\udf21\ufe0f  Temperatures",
+      "title": "🌡️  Temperatures",
       "type": "row"
     },
     {
@@ -2150,7 +2150,7 @@
           "datasource": "Prometheus",
           "expr": "node_hwmon_temp_celsius",
           "instant": true,
-          "legendFormat": "{{chip}} \u2014 {{sensor}}",
+          "legendFormat": "{{chip}} — {{sensor}}",
           "refId": "A"
         }
       ],
@@ -2235,7 +2235,7 @@
         {
           "datasource": "Prometheus",
           "expr": "node_hwmon_temp_celsius",
-          "legendFormat": "{{chip}} \u2014 {{sensor}}",
+          "legendFormat": "{{chip}} — {{sensor}}",
           "refId": "A"
         }
       ],
@@ -2251,7 +2251,7 @@
         "y": 68
       },
       "id": 37,
-      "title": "\u26a1  Power & Energy (Scaphandre)",
+      "title": "⚡  Power & Energy (Scaphandre)",
       "type": "row"
     },
     {
@@ -2628,7 +2628,7 @@
         "y": 84
       },
       "id": 43,
-      "title": "\ud83d\udcca  Processes & System Pressure",
+      "title": "📊  Processes & System Pressure",
       "type": "row"
     },
     {
@@ -3045,7 +3045,7 @@
         "y": 99
       },
       "id": 49,
-      "title": "\ud83d\udc33  Containers (cAdvisor)",
+      "title": "🐳  Containers (cAdvisor)",
       "type": "row"
     },
     {
@@ -3420,7 +3420,7 @@
         "y": 124
       },
       "id": 55,
-      "title": "\ud83c\udfae  GPU \u2014 NVIDIA GTX 1050 Ti",
+      "title": "🎮  GPU — NVIDIA GTX 1050 Ti",
       "type": "row"
     },
     {
@@ -4167,7 +4167,7 @@
         {
           "datasource": "Prometheus",
           "expr": "nvidia_smi_temperature_gpu",
-          "legendFormat": "Temperatura (\u00b0C)",
+          "legendFormat": "Temperatura (°C)",
           "refId": "A"
         },
         {
@@ -4397,7 +4397,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "System Control Panel \u2014 Advanced",
-  "uid": "system-advanced-pro",
+  "title": "daniel-ubuntu — Sistema",
+  "uid": "du-sistema",
   "weekStart": ""
 }

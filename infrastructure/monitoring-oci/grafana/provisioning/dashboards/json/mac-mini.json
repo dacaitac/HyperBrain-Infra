@@ -1,25 +1,47 @@
 {
-  "uid": "mac-mini-diagnostics",
-  "title": "Mac Mini — Diagnóstico",
+  "uid": "mm-sistema",
+  "title": "mac-mini — Sistema",
   "description": "System metrics for mac-mini via node_exporter (Darwin). Source: mac-metrics LaunchAgent.",
-  "tags": ["mac-mini", "darwin", "node-exporter"],
+  "tags": [
+    "mac-mini",
+    "darwin",
+    "node-exporter"
+  ],
   "timezone": "browser",
   "schemaVersion": 41,
   "version": 1,
   "refresh": "30s",
-  "time": { "from": "now-3h", "to": "now" },
-  "templating": { "list": [] },
-  "annotations": { "list": [] },
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
   "panels": [
     {
       "id": 1,
       "type": "stat",
       "title": "CPU Usage",
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\",instance=\"mac-mini\"}[5m]))",
           "legendFormat": "CPU",
           "refId": "A"
@@ -28,13 +50,23 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
-          "min": 0, "max": 1,
+          "min": 0,
+          "max": 1,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.7 },
-              { "color": "red", "value": 0.9 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.7
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
             ]
           },
           "mappings": []
@@ -42,20 +74,40 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
-        "orientation": "auto", "textMode": "auto", "colorMode": "background",
-        "graphMode": "area", "justifyMode": "auto"
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
       "id": 2,
       "type": "stat",
       "title": "Memory Used",
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "1 - (node_memory_free_bytes{instance=\"mac-mini\"} / node_memory_total_bytes{instance=\"mac-mini\"})",
           "legendFormat": "Memory",
           "refId": "A"
@@ -64,13 +116,23 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
-          "min": 0, "max": 1,
+          "min": 0,
+          "max": 1,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.75 },
-              { "color": "red", "value": 0.9 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.75
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
             ]
           },
           "mappings": []
@@ -78,20 +140,40 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
-        "orientation": "auto", "textMode": "auto", "colorMode": "background",
-        "graphMode": "area", "justifyMode": "auto"
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
       "id": 3,
       "type": "stat",
       "title": "Load Average (1m)",
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "node_load1{instance=\"mac-mini\"}",
           "legendFormat": "Load 1m",
           "refId": "A"
@@ -103,9 +185,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 4 },
-              { "color": "red", "value": 8 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 4
+              },
+              {
+                "color": "red",
+                "value": 8
+              }
             ]
           },
           "mappings": []
@@ -113,20 +204,40 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
-        "orientation": "auto", "textMode": "auto", "colorMode": "background",
-        "graphMode": "none", "justifyMode": "auto"
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
       }
     },
     {
       "id": 4,
       "type": "stat",
       "title": "Uptime",
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "time() - node_boot_time_seconds{instance=\"mac-mini\"}",
           "legendFormat": "Uptime",
           "refId": "A"
@@ -135,26 +246,54 @@
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
           "mappings": []
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
-        "orientation": "auto", "textMode": "auto", "colorMode": "value",
-        "graphMode": "none", "justifyMode": "auto"
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
       }
     },
     {
       "id": 5,
       "type": "stat",
       "title": "Process Count",
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "node_processes_state{instance=\"mac-mini\",state=\"running\"} or node_procs_running{instance=\"mac-mini\"}",
           "legendFormat": "Running",
           "refId": "A"
@@ -163,26 +302,54 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
           "mappings": []
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
-        "orientation": "auto", "textMode": "auto", "colorMode": "value",
-        "graphMode": "none", "justifyMode": "auto"
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
       }
     },
     {
       "id": 6,
       "type": "timeseries",
       "title": "CPU Usage — by Mode",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "rate(node_cpu_seconds_total{instance=\"mac-mini\",mode!=\"idle\"}[5m])",
           "legendFormat": "cpu{{cpu}} {{mode}}",
           "refId": "A"
@@ -192,153 +359,289 @@
         "defaults": {
           "unit": "percentunit",
           "min": 0,
-          "custom": { "lineWidth": 1, "fillOpacity": 5, "stacking": { "mode": "normal" } }
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
         },
         "overrides": []
       },
       "options": {
-        "tooltip": { "mode": "multi", "sort": "none" },
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
       }
     },
     {
       "id": 7,
       "type": "timeseries",
       "title": "Memory — Breakdown",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
           "expr": "node_memory_total_bytes{instance=\"mac-mini\"}",
-          "legendFormat": "Total", "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "Total",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "expr": "node_memory_active_bytes{instance=\"mac-mini\"}",
-          "legendFormat": "Active", "refId": "B",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "Active",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "expr": "node_memory_wired_bytes{instance=\"mac-mini\"}",
-          "legendFormat": "Wired", "refId": "C",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "Wired",
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "expr": "node_memory_compressed_bytes{instance=\"mac-mini\"}",
-          "legendFormat": "Compressed", "refId": "D",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "Compressed",
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "expr": "node_memory_free_bytes{instance=\"mac-mini\"}",
-          "legendFormat": "Free", "refId": "E",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "Free",
+          "refId": "E",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "bytes",
-          "custom": { "lineWidth": 1, "fillOpacity": 10 }
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
         },
         "overrides": []
       },
       "options": {
-        "tooltip": { "mode": "multi" },
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] }
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
       "id": 8,
       "type": "timeseries",
       "title": "Load Average",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
           "expr": "node_load1{instance=\"mac-mini\"}",
-          "legendFormat": "1m", "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "1m",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "expr": "node_load5{instance=\"mac-mini\"}",
-          "legendFormat": "5m", "refId": "B",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "5m",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "expr": "node_load15{instance=\"mac-mini\"}",
-          "legendFormat": "15m", "refId": "C",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "15m",
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "custom": { "lineWidth": 2, "fillOpacity": 5 }
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 5
+          }
         },
         "overrides": []
       },
       "options": {
-        "tooltip": { "mode": "multi" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       }
     },
     {
       "id": 9,
       "type": "timeseries",
       "title": "Network I/O",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
           "expr": "rate(node_network_receive_bytes_total{instance=\"mac-mini\",device!~\"lo.*\"}[5m])",
-          "legendFormat": "RX {{device}}", "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "RX {{device}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "expr": "-rate(node_network_transmit_bytes_total{instance=\"mac-mini\",device!~\"lo.*\"}[5m])",
-          "legendFormat": "TX {{device}}", "refId": "B",
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "TX {{device}}",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "Bps",
-          "custom": { "lineWidth": 1, "fillOpacity": 10 }
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
         },
         "overrides": []
       },
       "options": {
-        "tooltip": { "mode": "multi" },
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] }
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
       }
     },
     {
       "id": 10,
       "type": "table",
       "title": "Disk Space",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "targets": [
         {
           "expr": "node_filesystem_size_bytes{instance=\"mac-mini\",fstype!~\"tmpfs|devtmpfs|fuse.*\"}",
-          "legendFormat": "size {{mountpoint}}", "refId": "A", "instant": true,
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "size {{mountpoint}}",
+          "refId": "A",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "expr": "node_filesystem_avail_bytes{instance=\"mac-mini\",fstype!~\"tmpfs|devtmpfs|fuse.*\"}",
-          "legendFormat": "avail {{mountpoint}}", "refId": "B", "instant": true,
-          "datasource": { "type": "prometheus", "uid": "prometheus" }
+          "legendFormat": "avail {{mountpoint}}",
+          "refId": "B",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "bytes" },
+        "defaults": {
+          "unit": "bytes"
+        },
         "overrides": []
       },
       "options": {
         "showHeader": true,
-        "footer": { "show": false }
+        "footer": {
+          "show": false
+        }
       },
       "transformations": [
-        { "id": "merge", "options": {} }
+        {
+          "id": "merge",
+          "options": {}
+        }
       ]
     }
   ]
