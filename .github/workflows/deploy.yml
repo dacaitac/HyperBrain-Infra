@@ -10,6 +10,9 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The migrations step diffs HEAD~1..HEAD; a depth-1 clone has no parent commit.
+          fetch-depth: 2
 
       # ~/hyperbrain-deploy is the persistent runtime directory on daniel-ubuntu.
       # Its .env holds real secrets and is created once, by hand, outside of CI —
