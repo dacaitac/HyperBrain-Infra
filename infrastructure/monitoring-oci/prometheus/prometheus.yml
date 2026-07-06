@@ -36,3 +36,11 @@ scrape_configs:
     relabel_configs:
       - target_label: instance
         replacement: daniel-ubuntu
+
+  # ── nvidia-gpu-exporter — GPU metrics (daniel-ubuntu, GTX 1050 Ti) ────────────
+  - job_name: nvidia-gpu
+    static_configs:
+      - targets: ['100.83.47.113:9835']
+    relabel_configs:
+      - target_label: instance
+        replacement: daniel-ubuntu

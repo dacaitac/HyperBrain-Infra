@@ -1,11 +1,11 @@
 {
-  "uid": "mm-sistema",
-  "title": "mac-mini — Sistema",
+  "uid": "mac-mini",
+  "title": "mac-mini — Diagnóstico",
   "description": "System metrics for mac-mini via node_exporter (Darwin). Source: mac-metrics LaunchAgent.",
   "tags": [
+    "hyperbrain",
     "mac-mini",
-    "darwin",
-    "node-exporter"
+    "diagnostico"
   ],
   "timezone": "browser",
   "schemaVersion": 41,
@@ -28,7 +28,7 @@
       "title": "CPU Usage",
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 6,
         "x": 0,
         "y": 0
       },
@@ -94,8 +94,8 @@
       "title": "Memory Used",
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 4,
+        "w": 6,
+        "x": 6,
         "y": 0
       },
       "datasource": {
@@ -160,8 +160,8 @@
       "title": "Load Average (1m)",
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 8,
+        "w": 6,
+        "x": 12,
         "y": 0
       },
       "datasource": {
@@ -224,8 +224,8 @@
       "title": "Uptime",
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 12,
+        "w": 6,
+        "x": 18,
         "y": 0
       },
       "datasource": {
@@ -246,62 +246,6 @@
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      }
-    },
-    {
-      "id": 5,
-      "type": "stat",
-      "title": "Process Count",
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 16,
-        "y": 0
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "node_processes_state{instance=\"mac-mini\",state=\"running\"} or node_procs_running{instance=\"mac-mini\"}",
-          "legendFormat": "Running",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -644,5 +588,6 @@
         }
       ]
     }
-  ]
+  ],
+  "editable": false
 }

@@ -6,7 +6,9 @@ providers:
     folder: HyperBrain
     folderUid: hyperbrain
     type: file
-    disableDeletion: true
+    # Files under options.path are the single source of truth (git). Removing a
+    # dashboard file must purge it from Grafana, so deletion stays enabled.
+    disableDeletion: false
     updateIntervalSeconds: 60
     allowUiUpdates: false
     options:
