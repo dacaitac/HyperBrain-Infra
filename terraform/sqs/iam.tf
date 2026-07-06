@@ -5,7 +5,8 @@
 #   sops secrets.enc.env  (add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY)
 
 # ── HyperBrain-core ───────────────────────────────────────────────────────────
-# Full consumer/producer access to all 6 queues (ADR-001).
+# Consumes sync-events.fifo and apple-commands-results.fifo; produces to
+# apple-commands.fifo; full access to its own domain queues (ADR-001, ADR-010, HU-09c).
 
 resource "aws_iam_user" "hyperbrain_core" {
   name = "hyperbrain-core-sqs"
@@ -14,13 +15,13 @@ resource "aws_iam_user" "hyperbrain_core" {
 
 resource "aws_iam_policy" "hyperbrain_core_sqs" {
   name        = "hyperbrain-core-sqs"
-  description = "Least-privilege SQS access for HyperBrain-core (ADR-001)"
+  description = "Least-privilege SQS access for HyperBrain-core (ADR-001, ADR-010)"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AllQueuesAccess"
+        Sid    = "OwnQueuesFullAccess"
         Effect = "Allow"
         Action = [
           "sqs:SendMessage",
@@ -30,15 +31,38 @@ resource "aws_iam_policy" "hyperbrain_core_sqs" {
           "sqs:GetQueueUrl"
         ]
         Resource = [
-          aws_sqs_queue.sync_events.arn,
-          aws_sqs_queue.apple_commands.arn,
           aws_sqs_queue.core_events.arn,
           aws_sqs_queue.ia_jobs.arn,
-          aws_sqs_queue.sync_events_dlq.arn,
-          aws_sqs_queue.apple_commands_dlq.arn,
           aws_sqs_queue.core_events_dlq.arn,
           aws_sqs_queue.ia_jobs_dlq.arn,
         ]
+      },
+      {
+        Sid    = "InboundConsume"
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl"
+        ]
+        Resource = [
+          aws_sqs_queue.sync_events.arn,
+          aws_sqs_queue.apple_commands_results.arn,
+          aws_sqs_queue.sync_events_dlq.arn,
+          aws_sqs_queue.apple_commands_results_dlq.arn,
+          aws_sqs_queue.apple_commands_dlq.arn,
+        ]
+      },
+      {
+        Sid    = "AppleCommandsProduce"
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl"
+        ]
+        Resource = [aws_sqs_queue.apple_commands.arn]
       }
     ]
   })
@@ -50,9 +74,10 @@ resource "aws_iam_user_policy_attachment" "hyperbrain_core_sqs" {
 }
 
 # ── SentinelAPI (Mac Mini) ────────────────────────────────────────────────────
-# Produces Apple change events to sync-events.fifo; consumes write commands from
-# apple-commands.fifo. The two directions use separate queues (competing-consumers:
-# SentinelAPI must not receive from sync-events.fifo, which the Core consumes). TD-03 #21.
+# Produces Apple change events to sync-events.fifo and write-command results to
+# apple-commands-results.fifo; consumes write commands from apple-commands.fifo.
+# The directions use separate queues (competing-consumers: SentinelAPI must not
+# receive from sync-events.fifo, which the Core consumes). TD-03 #21, ADR-010.
 
 resource "aws_iam_user" "event_sentinel_api" {
   name = "event-sentinel-api-sqs"
@@ -67,10 +92,13 @@ resource "aws_iam_policy" "event_sentinel_api_sqs" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "SyncEventsProduce"
-        Effect   = "Allow"
-        Action   = ["sqs:SendMessage", "sqs:GetQueueAttributes"]
-        Resource = [aws_sqs_queue.sync_events.arn]
+        Sid    = "SyncEventsAndResultsProduce"
+        Effect = "Allow"
+        Action = ["sqs:SendMessage", "sqs:GetQueueAttributes"]
+        Resource = [
+          aws_sqs_queue.sync_events.arn,
+          aws_sqs_queue.apple_commands_results.arn,
+        ]
       },
       {
         Sid      = "AppleCommandsConsume"

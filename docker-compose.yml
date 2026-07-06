@@ -134,6 +134,10 @@ services:
       # SQS_QUEUE_SYNC_EVENTS=<full queue URL> (the full URL avoids sqs:GetQueueUrl), + real creds.
       AWS_SQS_ENDPOINT_OVERRIDE: ${AWS_SQS_ENDPOINT_OVERRIDE:-http://localstack:4566}
       SQS_QUEUE_SYNC_EVENTS: ${SQS_QUEUE_SYNC_EVENTS:-sync-events.fifo}
+      SQS_QUEUE_APPLE_COMMANDS: ${SQS_QUEUE_APPLE_COMMANDS:-apple-commands.fifo}
+      SQS_QUEUE_APPLE_COMMANDS_RESULTS: ${SQS_QUEUE_APPLE_COMMANDS_RESULTS:-apple-commands-results.fifo}
+      # Disable while apple-commands-results.fifo is not provisioned in the target account.
+      SYNC_RESULTS_CONSUMER_ENABLED: ${SYNC_RESULTS_CONSUMER_ENABLED:-true}
       SERVER_PORT: 8080
     ports:
       - "8080:8080"

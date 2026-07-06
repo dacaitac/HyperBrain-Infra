@@ -11,6 +11,11 @@ output "apple_commands_url" {
   value       = aws_sqs_queue.apple_commands.url
 }
 
+output "apple_commands_results_url" {
+  description = "URL of apple-commands-results.fifo (SQS_APPLE_COMMANDS_RESULTS_URL / APPLE_COMMANDS_RESULTS_QUEUE_URL)"
+  value       = aws_sqs_queue.apple_commands_results.url
+}
+
 output "core_events_url" {
   description = "URL of core-events (SQS_CORE_EVENTS_URL)"
   value       = aws_sqs_queue.core_events.url
@@ -29,6 +34,11 @@ output "sync_events_arn" {
 output "apple_commands_arn" {
   description = "ARN of apple-commands.fifo"
   value       = aws_sqs_queue.apple_commands.arn
+}
+
+output "apple_commands_results_arn" {
+  description = "ARN of apple-commands-results.fifo"
+  value       = aws_sqs_queue.apple_commands_results.arn
 }
 
 output "core_events_arn" {
