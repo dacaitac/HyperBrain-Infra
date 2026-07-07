@@ -138,6 +138,12 @@ services:
       SQS_QUEUE_APPLE_COMMANDS_RESULTS: ${SQS_QUEUE_APPLE_COMMANDS_RESULTS:-apple-commands-results.fifo}
       # Disable while apple-commands-results.fifo is not provisioned in the target account.
       SYNC_RESULTS_CONSUMER_ENABLED: ${SYNC_RESULTS_CONSUMER_ENABLED:-true}
+      # Notion write-back (HU-10). Off unless NOTION_TOKEN is provisioned in .env (CA-12);
+      # data source ids default to the Tasks/Cycles collections verified in issue #15.
+      NOTION_SYNC_ENABLED: ${NOTION_SYNC_ENABLED:-false}
+      NOTION_TOKEN: ${NOTION_TOKEN:-}
+      NOTION_TASKS_DATA_SOURCE_ID: ${NOTION_TASKS_DATA_SOURCE_ID:-1bf8bc9c5d918171b7ea000b7e326082}
+      NOTION_CYCLES_DATA_SOURCE_ID: ${NOTION_CYCLES_DATA_SOURCE_ID:-1bf8bc9c5d9181e78737000b45812f45}
       SERVER_PORT: 8080
     ports:
       - "8080:8080"
