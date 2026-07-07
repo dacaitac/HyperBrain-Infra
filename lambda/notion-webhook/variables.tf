@@ -11,7 +11,13 @@ variable "environment" {
 }
 
 variable "webhook_secret_param" {
-  description = "SSM SecureString parameter holding the Notion webhook verification token (created manually, never in state)"
+  description = "SSM SecureString parameter holding the Notion subscription HMAC verification token (created manually, never in state)"
   type        = string
   default     = "/hyperbrain/notion/webhook-secret"
+}
+
+variable "automation_token_param" {
+  description = "SSM SecureString parameter holding the shared bearer token that Notion DB automations send in the X-HyperBrain-Token header (created manually, never in state)"
+  type        = string
+  default     = "/hyperbrain/notion/automation-token"
 }

@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# LocalStack smoke test for the Notion webhook Lambda (issue #41, CA-4).
-# Deploys lambda/notion-webhook/handler.py into LocalStack, invokes it with a
-# synthetic signed Function URL event and verifies the envelope reaches the
-# local sync-events.fifo. Requires: docker compose up -d (SERVICES=sqs,lambda).
+# LocalStack smoke test for the Notion webhook Lambda (issues #41/#42).
+# Deploys lambda/notion-webhook/handler.py into LocalStack and exercises both
+# auth channels (HMAC subscription + X-HyperBrain-Token automation) plus the
+# drop-but-200 behaviour. Requires: docker compose up -d (SERVICES=sqs,lambda).
 set -euo pipefail
 
 ENDPOINT="${LOCALSTACK_ENDPOINT:-http://localhost:4566}"
 REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 SECRET="dev-webhook-secret"
+AUTOMATION_TOKEN="dev-automation-token"
 FN="notion-webhook-receiver"
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PASS=0; FAIL=0
@@ -24,7 +25,7 @@ echo "=== HyperBrain Notion webhook Lambda smoke test (LocalStack) ==="
 
 QUEUE_URL=$(awsl sqs get-queue-url --queue-name sync-events.fifo --query QueueUrl --output text)
 
-# Drain leftovers so the assertion below sees only our message
+# Drain leftovers so the assertions below see only our messages
 while true; do
   RECEIPT=$(awsl sqs receive-message --queue-url "${QUEUE_URL}" \
     --query 'Messages[0].ReceiptHandle' --output text 2>/dev/null || echo "None")
@@ -43,18 +44,20 @@ awsl lambda create-function \
   --zip-file "fileb://${ZIP}" \
   --role arn:aws:iam::000000000000:role/lambda-role \
   --timeout 30 \
-  --environment "Variables={NOTION_WEBHOOK_SECRET=${SECRET},QUEUE_URL=${QUEUE_URL}}" > /dev/null
+  --environment "Variables={NOTION_WEBHOOK_SECRET=${SECRET},NOTION_AUTOMATION_TOKEN=${AUTOMATION_TOKEN},QUEUE_URL=${QUEUE_URL}}" > /dev/null
 awsl lambda wait function-active-v2 --function-name "${FN}"
 ok
 
-invoke() { # $1=body $2=signature-header → prints statusCode
+invoke() { # $1=body $2=notion-signature $3=hyperbrain-token → prints statusCode
   local event out
-  event=$(python3 - "$1" "$2" <<'PY'
+  event=$(python3 - "$1" "$2" "$3" <<'PY'
 import json, sys
-body, sig = sys.argv[1], sys.argv[2]
+body, sig, token = sys.argv[1], sys.argv[2], sys.argv[3]
 headers = {"content-type": "application/json"}
 if sig:
     headers["x-notion-signature"] = sig
+if token:
+    headers["x-hyperbrain-token"] = token
 print(json.dumps({"headers": headers, "body": body,
                   "requestContext": {"http": {"method": "POST"}}}))
 PY
@@ -66,35 +69,65 @@ PY
   python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('statusCode'))" "${out}"
 }
 
-BODY='{"id":"smoke-'"$(date +%s)"'","type":"page.content_updated","entity":{"id":"smoke-entity","type":"page"},"data":{"source":"localstack-smoke-test"}}'
-SIG="sha256=$(printf '%s' "${BODY}" | openssl dgst -sha256 -hmac "${SECRET}" -hex | awk '{print $NF}')"
-
-check "Signed synthetic event → HTTP 200"
-STATUS=$(invoke "${BODY}" "${SIG}")
-[ "${STATUS}" = "200" ] && ok || fail "statusCode=${STATUS}"
-
-check "Envelope arrives at sync-events.fifo with source_system=NOTION"
-MSG=$(awsl sqs receive-message --queue-url "${QUEUE_URL}" \
-  --wait-time-seconds 10 --max-number-of-messages 1 \
-  --query 'Messages[0].Body' --output text 2>/dev/null || echo "None")
-if [ "${MSG}" != "None" ] && python3 -c '
+# Assert the next message on the queue matches source_system=NOTION, the given
+# delivery_channel and entity id.
+assert_envelope() { # $1=expected-channel $2=expected-entity
+  local msg
+  msg=$(awsl sqs receive-message --queue-url "${QUEUE_URL}" \
+    --wait-time-seconds 10 --max-number-of-messages 1 \
+    --query 'Messages[0].Body' --output text 2>/dev/null || echo "None")
+  if [ "${msg}" != "None" ] && python3 -c '
 import json, sys
 env = json.loads(sys.argv[1])
 assert env["source_system"] == "NOTION", env
 assert env["message_id"], env
-assert env["payload"]["entity"]["id"] == "smoke-entity", env
-' "${MSG}"; then ok; else fail "message missing or malformed: ${MSG}"; fi
+assert env["delivery_channel"] == sys.argv[2], env
+assert env["payload"]["entity"]["id"] == sys.argv[3], env
+' "${msg}" "$1" "$2"; then ok; else fail "message missing or malformed: ${msg}"; fi
+}
 
-check "Invalid signature → HTTP 401"
-STATUS=$(invoke "${BODY}" "sha256=deadbeef")
-[ "${STATUS}" = "401" ] && ok || fail "statusCode=${STATUS}"
+sign() { printf '%s' "$1" | openssl dgst -sha256 -hmac "${SECRET}" -hex | awk '{print $NF}'; }
 
-check "Missing signature → HTTP 401"
-STATUS=$(invoke "${BODY}" "")
-[ "${STATUS}" = "401" ] && ok || fail "statusCode=${STATUS}"
+SUB_BODY='{"id":"sub-'"$(date +%s)"'","type":"page.content_updated","entity":{"id":"sub-entity","type":"page"},"data":{"source":"localstack-smoke-test"}}'
+AUTO_BODY='{"id":"auto-'"$(date +%s)"'","type":"automation","entity":{"id":"auto-entity","type":"page"},"data":{"source":"localstack-smoke-test"}}'
 
+# ── Subscription channel (HMAC) ────────────────────────────────────────────────
+check "Signed subscription event → HTTP 200"
+STATUS=$(invoke "${SUB_BODY}" "sha256=$(sign "${SUB_BODY}")" "")
+[ "${STATUS}" = "200" ] && ok || fail "statusCode=${STATUS}"
+
+check "Subscription envelope on queue (delivery_channel=subscription)"
+assert_envelope "subscription" "sub-entity"
+
+# ── Automation channel (bearer token) ──────────────────────────────────────────
+check "Automation event with valid X-HyperBrain-Token → HTTP 200"
+STATUS=$(invoke "${AUTO_BODY}" "" "${AUTOMATION_TOKEN}")
+[ "${STATUS}" = "200" ] && ok || fail "statusCode=${STATUS}"
+
+check "Automation envelope on queue (delivery_channel=automation)"
+assert_envelope "automation" "auto-entity"
+
+# ── Unverified deliveries: dropped but answered 200 (never pause the sender) ────
+check "No signature, no token → HTTP 200 (dropped, not forwarded)"
+STATUS=$(invoke "${AUTO_BODY}" "" "")
+[ "${STATUS}" = "200" ] && ok || fail "statusCode=${STATUS}"
+
+check "Wrong automation token → HTTP 200 (dropped)"
+STATUS=$(invoke "${AUTO_BODY}" "" "wrong-token")
+[ "${STATUS}" = "200" ] && ok || fail "statusCode=${STATUS}"
+
+check "Tampered signature → HTTP 200 (dropped)"
+STATUS=$(invoke "${SUB_BODY}" "sha256=deadbeef" "")
+[ "${STATUS}" = "200" ] && ok || fail "statusCode=${STATUS}"
+
+check "Dropped deliveries left the queue empty"
+EMPTY=$(awsl sqs receive-message --queue-url "${QUEUE_URL}" \
+  --wait-time-seconds 3 --query 'Messages[0].Body' --output text 2>/dev/null || echo "None")
+[ "${EMPTY}" = "None" ] && ok || fail "unexpected message forwarded: ${EMPTY}"
+
+# ── Handshake ──────────────────────────────────────────────────────────────────
 check "Subscription verification_token → HTTP 200 (unsigned handshake)"
-STATUS=$(invoke '{"verification_token":"smoke-verification-token"}' "")
+STATUS=$(invoke '{"verification_token":"smoke-verification-token"}' "" "")
 [ "${STATUS}" = "200" ] && ok || fail "statusCode=${STATUS}"
 
 echo ""

@@ -35,9 +35,10 @@ data "archive_file" "handler" {
 }
 
 # ── IAM ───────────────────────────────────────────────────────────────────────
-# Least privilege: send to sync-events.fifo only, read the webhook secret from
-# SSM, write its own CloudWatch logs. The secret value itself is never in state
-# (created manually via `aws ssm put-parameter`, see README).
+# Least privilege: send to sync-events.fifo only, read the two webhook secrets
+# from SSM (HMAC subscription key + automation bearer token), write its own
+# CloudWatch logs. The secret values are never in state (created manually via
+# `aws ssm put-parameter`, see README).
 
 resource "aws_iam_role" "lambda" {
   name = "notion-webhook-lambda"
@@ -65,10 +66,13 @@ resource "aws_iam_role_policy" "lambda" {
         Resource = [data.aws_sqs_queue.sync_events.arn]
       },
       {
-        Sid      = "WebhookSecretRead"
-        Effect   = "Allow"
-        Action   = ["ssm:GetParameter"]
-        Resource = ["arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.webhook_secret_param}"]
+        Sid    = "WebhookSecretRead"
+        Effect = "Allow"
+        Action = ["ssm:GetParameter"]
+        Resource = [
+          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.webhook_secret_param}",
+          "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.automation_token_param}",
+        ]
       },
       {
         Sid      = "Logs"
@@ -95,8 +99,9 @@ resource "aws_lambda_function" "notion_webhook" {
 
   environment {
     variables = {
-      QUEUE_URL            = data.aws_sqs_queue.sync_events.url
-      WEBHOOK_SECRET_PARAM = var.webhook_secret_param
+      QUEUE_URL              = data.aws_sqs_queue.sync_events.url
+      WEBHOOK_SECRET_PARAM   = var.webhook_secret_param
+      AUTOMATION_TOKEN_PARAM = var.automation_token_param
     }
   }
 
@@ -104,8 +109,8 @@ resource "aws_lambda_function" "notion_webhook" {
 }
 
 # Public HTTPS entry point for Notion deliveries. Auth NONE by design: request
-# authenticity is enforced by the HMAC signature check inside the handler
-# (ADR-011 — daniel-ubuntu never exposes a public port).
+# authenticity is enforced inside the handler (HMAC signature for subscriptions,
+# bearer token for automations — ADR-011; daniel-ubuntu never exposes a port).
 resource "aws_lambda_function_url" "notion_webhook" {
   function_name      = aws_lambda_function.notion_webhook.function_name
   authorization_type = "NONE"
