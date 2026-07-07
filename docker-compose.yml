@@ -142,12 +142,16 @@ services:
       SQS_QUEUE_APPLE_COMMANDS_RESULTS: ${SQS_QUEUE_APPLE_COMMANDS_RESULTS:-apple-commands-results.fifo}
       # Disable while apple-commands-results.fifo is not provisioned in the target account.
       SYNC_RESULTS_CONSUMER_ENABLED: ${SYNC_RESULTS_CONSUMER_ENABLED:-true}
-      # Notion write-back (HU-10). Off unless NOTION_TOKEN is provisioned in .env (CA-12);
-      # data source ids default to the Tasks/Cycles collections verified in issue #15.
+      # Notion sync (HU-10 outbound + HU-14 inbound). Off unless NOTION_TOKEN is provisioned
+      # in .env (CA-12/CA-16); data source ids default to the Tasks/Cycles collections
+      # verified in issue #15. The database ids (HU-14) let the consumer match webhook
+      # parents that arrive as database_id instead of data_source_id.
       NOTION_SYNC_ENABLED: ${NOTION_SYNC_ENABLED:-false}
       NOTION_TOKEN: ${NOTION_TOKEN:-}
       NOTION_TASKS_DATA_SOURCE_ID: ${NOTION_TASKS_DATA_SOURCE_ID:-1bf8bc9c5d918171b7ea000b7e326082}
       NOTION_CYCLES_DATA_SOURCE_ID: ${NOTION_CYCLES_DATA_SOURCE_ID:-1bf8bc9c5d9181e78737000b45812f45}
+      NOTION_TASKS_DATABASE_ID: ${NOTION_TASKS_DATABASE_ID:-1bf8bc9c5d91812b8c97e5e6450858aa}
+      NOTION_CYCLES_DATABASE_ID: ${NOTION_CYCLES_DATABASE_ID:-1bf8bc9c5d9181d882cfe1f4aa38f295}
       SERVER_PORT: 8080
     ports:
       - "8080:8080"
