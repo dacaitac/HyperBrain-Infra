@@ -57,7 +57,13 @@ def lambda_handler(event, _context):
 
     headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
     if not _signature_valid(body, headers.get("x-notion-signature")):
-        logger.warning("Rejected webhook delivery: invalid or missing X-Notion-Signature")
+        # Distinguish unsigned senders (e.g. Notion DB automations, which never
+        # sign) from real signature mismatches; never log the signature value.
+        reason = "missing header" if "x-notion-signature" not in headers else "signature mismatch"
+        source = payload.get("source") or {}
+        logger.warning(
+            "Rejected webhook delivery (%s): type=%s source_type=%s user_agent=%s",
+            reason, payload.get("type"), source.get("type"), headers.get("user-agent"))
         return {"statusCode": 401, "body": "invalid signature"}
 
     message_id = payload.get("id") or str(uuid.uuid4())
