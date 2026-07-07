@@ -2,8 +2,10 @@ terraform {
   required_version = ">= 1.7"
   required_providers {
     aws = {
+      # >= 6.x: aws_lambda_permission.invoked_via_function_url (public Function
+      # URLs require the extra InvokeFunction grant since Oct 2025)
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
     archive = {
       source  = "hashicorp/archive"
@@ -107,6 +109,27 @@ resource "aws_lambda_function" "notion_webhook" {
 resource "aws_lambda_function_url" "notion_webhook" {
   function_name      = aws_lambda_function.notion_webhook.function_name
   authorization_type = "NONE"
+}
+
+# authorization_type = NONE still requires an explicit resource-based policy:
+# anonymous callers need BOTH lambda:InvokeFunctionUrl and (since Oct 2025)
+# lambda:InvokeFunction, or every request gets 403.
+resource "aws_lambda_permission" "public_function_url" {
+  statement_id           = "AllowPublicFunctionUrlInvoke"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.notion_webhook.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
+
+# invoked_via_function_url scopes the public InvokeFunction grant to calls
+# that arrive through the Function URL — direct API invocation stays denied.
+resource "aws_lambda_permission" "public_function_invoke" {
+  statement_id             = "AllowPublicFunctionInvokeViaUrl"
+  action                   = "lambda:InvokeFunction"
+  function_name            = aws_lambda_function.notion_webhook.function_name
+  principal                = "*"
+  invoked_via_function_url = true
 }
 
 # ── Locals ────────────────────────────────────────────────────────────────────
