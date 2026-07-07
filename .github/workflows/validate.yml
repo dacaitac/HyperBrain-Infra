@@ -43,3 +43,23 @@ jobs:
         if: steps.tf-exists.outputs.exists == 'true'
         working-directory: terraform/sqs
         run: terraform validate
+
+  validate-lambda-notion-webhook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init (no backend)
+        working-directory: lambda/notion-webhook
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        working-directory: lambda/notion-webhook
+        run: terraform validate
+
+      - name: Python syntax check
+        working-directory: lambda/notion-webhook
+        run: python3 -m py_compile handler.py

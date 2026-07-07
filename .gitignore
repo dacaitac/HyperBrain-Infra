@@ -34,3 +34,9 @@ Thumbs.db
 *.tfstate.backup
 *.tfplan
 terraform.tfvars
+
+# Python bytecode (lambda handlers)
+__pycache__/
+
+# Lambda build artifacts (terraform archive_file)
+**/.build/

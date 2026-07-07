@@ -28,9 +28,13 @@ services:
     container_name: hyperbrain-localstack
     restart: unless-stopped
     environment:
-      SERVICES: sqs
+      # lambda: dev double of the Notion webhook receiver (lambda/notion-webhook, #41)
+      SERVICES: sqs,lambda
     ports:
       - "4566:4566"
+    volumes:
+      # LocalStack's Lambda executor spawns runtime containers via the host Docker daemon
+      - /var/run/docker.sock:/var/run/docker.sock
     mem_limit: 512m
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]

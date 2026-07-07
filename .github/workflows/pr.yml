@@ -5,12 +5,17 @@ on:
     branches: [main]
     paths:
       - 'terraform/**'
+      - 'lambda/**'
 
 jobs:
   terraform-plan:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [terraform/sqs, lambda/notion-webhook]
     steps:
       - uses: actions/checkout@v4
 
@@ -18,7 +23,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
-        working-directory: terraform/sqs
+        working-directory: ${{ matrix.module }}
         run: terraform init
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -27,7 +32,7 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        working-directory: terraform/sqs
+        working-directory: ${{ matrix.module }}
         run: terraform plan -no-color
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -55,7 +60,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `#### Terraform Plan \`terraform/sqs\` ${icon}\n\n<details><summary>Mostrar plan</summary>\n\n\`\`\`hcl\n${truncated}\n\`\`\`\n\n</details>\n\n**Estado:** \`${outcome}\` | **Actor:** @${{ github.actor }}\n\n> ⚠️ Este plan usa estado vacío (local). El estado real vive en \`daniel-ubuntu\`. Ejecutar \`terraform plan\` localmente antes de hacer apply.`
+              body: `#### Terraform Plan \`${{ matrix.module }}\` ${icon}\n\n<details><summary>Mostrar plan</summary>\n\n\`\`\`hcl\n${truncated}\n\`\`\`\n\n</details>\n\n**Estado:** \`${outcome}\` | **Actor:** @${{ github.actor }}\n\n> ⚠️ Este plan usa estado vacío (local). El estado real vive fuera del repo. Ejecutar \`terraform plan\` localmente antes de hacer apply.`
             });
 
       - name: Fail if plan failed
