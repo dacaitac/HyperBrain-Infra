@@ -13,7 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/postgres/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     ports:
-      - "127.0.0.1:5432:5432"
+      - "${BIND_ADDRESS:-127.0.0.1}:5432:5432"
     mem_limit: 512m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -q"]
@@ -31,7 +31,7 @@ services:
       # lambda: dev double of the Notion webhook receiver (lambda/notion-webhook, #41)
       SERVICES: sqs,lambda
     ports:
-      - "127.0.0.1:4566:4566"
+      - "${BIND_ADDRESS:-127.0.0.1}:4566:4566"
     volumes:
       # LocalStack's Lambda executor spawns runtime containers via the host Docker daemon
       - /var/run/docker.sock:/var/run/docker.sock
@@ -84,7 +84,7 @@ services:
       GOTRUE_MAILER_AUTOCONFIRM: "true"
       GOTRUE_SMS_AUTOCONFIRM: "true"
     ports:
-      - "127.0.0.1:9999:9999"
+      - "${BIND_ADDRESS:-127.0.0.1}:9999:9999"
     mem_limit: 128m
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:9999/health"]
@@ -108,7 +108,7 @@ services:
       PGRST_SERVER_PORT: 3000
     ports:
       # 3000 is taken by an unrelated grafana container already running on daniel-ubuntu.
-      - "127.0.0.1:3001:3000"
+      - "${BIND_ADDRESS:-127.0.0.1}:3001:3000"
     mem_limit: 128m
     # No healthcheck: the official image ships no shell (not even /bin/sh) and no
     # curl/wget, so there is nothing a CMD/CMD-SHELL probe can execute inside the
@@ -154,7 +154,7 @@ services:
       NOTION_CYCLES_DATABASE_ID: ${NOTION_CYCLES_DATABASE_ID:-1bf8bc9c5d9181d882cfe1f4aa38f295}
       SERVER_PORT: 8080
     ports:
-      - "127.0.0.1:8080:8080"
+      - "${BIND_ADDRESS:-127.0.0.1}:8080:8080"
     mem_limit: 512m
     healthcheck:
       # eclipse-temurin:*-jre-alpine has no curl; busybox wget is present instead.
@@ -170,8 +170,8 @@ services:
     container_name: hyperbrain-appsmith
     restart: unless-stopped
     ports:
-      - "127.0.0.1:80:80"
-      - "127.0.0.1:443:443"
+      - "${BIND_ADDRESS:-127.0.0.1}:80:80"
+      - "${BIND_ADDRESS:-127.0.0.1}:443:443"
     volumes:
       - appsmith_data:/appsmith-stacks
     mem_limit: 1g
@@ -182,9 +182,9 @@ services:
     container_name: hyperbrain-inbucket
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:2500:2500"
-      - "127.0.0.1:1100:1100"
+      - "${BIND_ADDRESS:-127.0.0.1}:9000:9000"
+      - "${BIND_ADDRESS:-127.0.0.1}:2500:2500"
+      - "${BIND_ADDRESS:-127.0.0.1}:1100:1100"
     mem_limit: 64m
 
 volumes:
