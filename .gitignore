@@ -40,3 +40,6 @@ __pycache__/
 
 # Lambda build artifacts (terraform archive_file)
 **/.build/
+
+# backups locales de hardening
+docker-compose.yml.bak-*
