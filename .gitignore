@@ -43,3 +43,6 @@ __pycache__/
 
 # backups locales de hardening
 docker-compose.yml.bak-*
+
+# Claude Code — commit settings.json + hooks/; ignore local overrides (ADR-017)
+.claude/settings.local.json
