@@ -126,6 +126,11 @@ services:
       localstack:
         condition: service_healthy
     environment:
+      # Container timezone. The Prioritizer runs a @Scheduled tick (#66a); unless the
+      # annotation pins a zone, it inherits the JVM default (UTC in the container).
+      # Setting TZ keeps time-of-day scheduling aligned with the operator's wall clock.
+      # Harmless: overridable per-environment via .env.
+      TZ: ${TZ:-America/Bogota}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
