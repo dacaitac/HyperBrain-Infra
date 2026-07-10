@@ -27,6 +27,7 @@ resource "aws_iam_policy" "hyperbrain_core_sqs" {
           "sqs:SendMessage",
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
+          "sqs:ChangeMessageVisibility",
           "sqs:GetQueueAttributes",
           "sqs:GetQueueUrl"
         ]
@@ -43,6 +44,7 @@ resource "aws_iam_policy" "hyperbrain_core_sqs" {
         Action = [
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
+          "sqs:ChangeMessageVisibility",
           "sqs:GetQueueAttributes",
           "sqs:GetQueueUrl"
         ]
