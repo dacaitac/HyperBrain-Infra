@@ -48,6 +48,16 @@ resource "aws_sqs_queue" "apple_commands_results_dlq" {
   tags = local.common_tags
 }
 
+resource "aws_sqs_queue" "user_commands_dlq" {
+  name                        = "user-commands-dlq.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = false
+  message_retention_seconds   = 1209600 # 14 days
+  visibility_timeout_seconds  = 30
+
+  tags = local.common_tags
+}
+
 resource "aws_sqs_queue" "core_events_dlq" {
   name                       = "core-events-dlq"
   message_retention_seconds  = 1209600 # 14 days
@@ -105,6 +115,24 @@ resource "aws_sqs_queue" "apple_commands_results" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.apple_commands_results_dlq.arn
+    maxReceiveCount     = 3
+  })
+
+  tags = local.common_tags
+}
+
+# User commands iOS -> core via SentinelAPI (HU-01b #66): replan trigger and
+# Sleep Score input. FIFO with MessageGroupId=user-commands; deduplication via
+# explicit MessageDeduplicationId = command_id.
+resource "aws_sqs_queue" "user_commands" {
+  name                        = "user-commands.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = false # Deduplication via explicit MessageDeduplicationId = command_id
+  message_retention_seconds   = 1209600
+  visibility_timeout_seconds  = 30
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.user_commands_dlq.arn
     maxReceiveCount     = 3
   })
 

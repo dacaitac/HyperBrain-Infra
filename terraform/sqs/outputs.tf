@@ -16,6 +16,11 @@ output "apple_commands_results_url" {
   value       = aws_sqs_queue.apple_commands_results.url
 }
 
+output "user_commands_url" {
+  description = "URL of user-commands.fifo (SQS_USER_COMMANDS_URL)"
+  value       = aws_sqs_queue.user_commands.url
+}
+
 output "core_events_url" {
   description = "URL of core-events (SQS_CORE_EVENTS_URL)"
   value       = aws_sqs_queue.core_events.url
@@ -39,6 +44,11 @@ output "apple_commands_arn" {
 output "apple_commands_results_arn" {
   description = "ARN of apple-commands-results.fifo"
   value       = aws_sqs_queue.apple_commands_results.arn
+}
+
+output "user_commands_arn" {
+  description = "ARN of user-commands.fifo"
+  value       = aws_sqs_queue.user_commands.arn
 }
 
 output "core_events_arn" {

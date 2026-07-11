@@ -145,8 +145,15 @@ services:
       SQS_QUEUE_SYNC_EVENTS: ${SQS_QUEUE_SYNC_EVENTS:-sync-events.fifo}
       SQS_QUEUE_APPLE_COMMANDS: ${SQS_QUEUE_APPLE_COMMANDS:-apple-commands.fifo}
       SQS_QUEUE_APPLE_COMMANDS_RESULTS: ${SQS_QUEUE_APPLE_COMMANDS_RESULTS:-apple-commands-results.fifo}
+      # User commands iOS -> core (HU-01b #66): replan trigger + Sleep Score input.
+      SQS_QUEUE_USER_COMMANDS: ${SQS_QUEUE_USER_COMMANDS:-user-commands.fifo}
       # Disable while apple-commands-results.fifo is not provisioned in the target account.
       SYNC_RESULTS_CONSUMER_ENABLED: ${SYNC_RESULTS_CONSUMER_ENABLED:-true}
+      # HU-01b morning agenda dispatch (deploy-safe default OFF; enable once the SentinelAPI
+      # write-back + "HyperBrain" calendar are live on the Mac Mini).
+      APP_PLANNER_DELIVERY_SCHEDULING_ENABLED: ${APP_PLANNER_DELIVERY_SCHEDULING_ENABLED:-false}
+      # HU-01b user-commands consumer (default OFF until user-commands.fifo + DLQ exist in AWS).
+      USER_COMMANDS_CONSUMER_ENABLED: ${USER_COMMANDS_CONSUMER_ENABLED:-false}
       # Notion sync (HU-10 outbound + HU-14 inbound). Off unless NOTION_TOKEN is provisioned
       # in .env (CA-12/CA-16); data source ids default to the Tasks/Cycles collections
       # verified in issue #15. The database ids (HU-14) let the consumer match webhook

@@ -5,8 +5,9 @@
 #   sops secrets.enc.env  (add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY)
 
 # ── HyperBrain-core ───────────────────────────────────────────────────────────
-# Consumes sync-events.fifo and apple-commands-results.fifo; produces to
-# apple-commands.fifo; full access to its own domain queues (ADR-001, ADR-010, HU-09c).
+# Consumes sync-events.fifo, apple-commands-results.fifo and user-commands.fifo;
+# produces to apple-commands.fifo; full access to its own domain queues
+# (ADR-001, ADR-010, HU-09c, HU-01b).
 
 resource "aws_iam_user" "hyperbrain_core" {
   name = "hyperbrain-core-sqs"
@@ -51,9 +52,11 @@ resource "aws_iam_policy" "hyperbrain_core_sqs" {
         Resource = [
           aws_sqs_queue.sync_events.arn,
           aws_sqs_queue.apple_commands_results.arn,
+          aws_sqs_queue.user_commands.arn,
           aws_sqs_queue.sync_events_dlq.arn,
           aws_sqs_queue.apple_commands_results_dlq.arn,
           aws_sqs_queue.apple_commands_dlq.arn,
+          aws_sqs_queue.user_commands_dlq.arn,
         ]
       },
       {
@@ -76,8 +79,10 @@ resource "aws_iam_user_policy_attachment" "hyperbrain_core_sqs" {
 }
 
 # ── SentinelAPI (Mac Mini) ────────────────────────────────────────────────────
-# Produces Apple change events to sync-events.fifo and write-command results to
-# apple-commands-results.fifo; consumes write commands from apple-commands.fifo.
+# Produces Apple change events to sync-events.fifo, write-command results to
+# apple-commands-results.fifo and user commands (iOS shortcuts: replan trigger,
+# Sleep Score) to user-commands.fifo (HU-01b #66); consumes write commands from
+# apple-commands.fifo.
 # The directions use separate queues (competing-consumers: SentinelAPI must not
 # receive from sync-events.fifo, which the Core consumes). TD-03 #21, ADR-010.
 
@@ -100,6 +105,7 @@ resource "aws_iam_policy" "event_sentinel_api_sqs" {
         Resource = [
           aws_sqs_queue.sync_events.arn,
           aws_sqs_queue.apple_commands_results.arn,
+          aws_sqs_queue.user_commands.arn,
         ]
       },
       {
