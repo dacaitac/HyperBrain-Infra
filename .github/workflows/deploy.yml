@@ -153,11 +153,9 @@ jobs:
           kubectl rollout status deployment/postgrest -n hyperbrain --timeout=5m
           kubectl rollout status deployment/kube-state-metrics -n hyperbrain --timeout=5m
 
-      # Resolve the core's tailnet proxy through tailscale itself (no MagicDNS
-      # dependency on the runner's resolver).
-      - name: Health check core via tailnet
+      # Health check via kubectl exec — avoids depending on the Tailscale operator
+      # proxy being fully provisioned in the tailnet at deploy time.
+      - name: Health check core
         run: |
-          CORE_IP="$(tailscale ip -4 hyperbrain-core)"
-          echo "hyperbrain-core resolves to ${CORE_IP}"
-          curl -sf --retry 10 --retry-delay 15 --retry-all-errors \
-            "http://${CORE_IP}:8080/actuator/health"
+          kubectl exec -n hyperbrain deploy/hyperbrain-core -- \
+            curl -sf http://localhost:8080/actuator/health
