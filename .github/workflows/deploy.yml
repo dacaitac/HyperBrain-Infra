@@ -78,6 +78,17 @@ jobs:
             sleep 5
           done
 
+      - name: Debug Tailscale connectivity to k3s API
+        run: |
+          echo "=== Tailscale status ==="
+          tailscale status
+          echo "=== TCP test port 22 ==="
+          nc -zv -w 10 100.110.72.116 22 || echo "port 22 FAILED"
+          echo "=== TCP test port 6443 ==="
+          nc -zv -w 10 100.110.72.116 6443 || echo "port 6443 FAILED"
+          echo "=== curl k3s API ==="
+          curl -sk --max-time 10 https://100.110.72.116:6443/version | head -5 || echo "curl 6443 FAILED"
+
       - name: Configure kubeconfig
         run: |
           install -m 700 -d "$RUNNER_TEMP/kube"
