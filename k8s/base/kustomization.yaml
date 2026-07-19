@@ -23,6 +23,7 @@ resources:
   - backup/pg-dump-offsite-cronjob.yaml
   - monitoring/kube-state-metrics.yaml
   - monitoring/prometheus-scraper-rbac.yaml
+  - monitoring/nodeport-metrics.yaml
   - descheduler/rbac.yaml
   - descheduler/configmap-policy.yaml
   - descheduler/cronjob.yaml

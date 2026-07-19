@@ -7,6 +7,12 @@ services:
     dns:
       - 100.100.100.100
       - 1.1.1.1
+    # kubelet on the OCI host itself (100.110.72.116) is not reachable from inside
+    # the Docker bridge — the host's own tailscale IP is not routed into containers.
+    # host-gateway resolves to the Docker bridge gateway (the OCI host), where
+    # kubelet listens on *:10250; prometheus.yml uses `hyperbrain-oci-host` for it.
+    extra_hosts:
+      - "hyperbrain-oci-host:host-gateway"
     volumes:
       # Whole dir (not just the yml): also carries k8s-scraper.token (gitignored,
       # extracted per k8s/README.md) for the kubelet scrape jobs (ADR-021 F8').

@@ -29,9 +29,12 @@ scrape_configs:
   # (dns: 100.100.100.100 in the compose service).
 
   # ── kube-state-metrics — cluster object state (nodes, deployments, cronjobs) ─
+  # NodePort 32080 (k8s/base/monitoring/nodeport-metrics.yaml) binds on all nodes;
+  # daniel-ubuntu used here but any tailnet node IP works. Switch to hyperbrain-ksm:8080
+  # (MagicDNS) once the Tailscale Kubernetes Operator is installed.
   - job_name: kube-state-metrics
     static_configs:
-      - targets: ['hyperbrain-ksm:8080']
+      - targets: ['100.83.47.113:32080']
         labels:
           cluster: hyperbrain
 
@@ -46,7 +49,9 @@ scrape_configs:
     authorization:
       credentials_file: /etc/prometheus/k8s-scraper.token
     static_configs:
-      - targets: ['100.110.72.116:10250']
+      # hyperbrain-oci-host resolves to the Docker bridge gateway (host-gateway in
+      # docker-compose.yml): kubelet listens on *:10250 so this reaches it locally.
+      - targets: ['hyperbrain-oci-host:10250']
         labels:
           instance: hyperbrain-oci
       - targets: ['100.83.47.113:10250']
@@ -64,7 +69,7 @@ scrape_configs:
     authorization:
       credentials_file: /etc/prometheus/k8s-scraper.token
     static_configs:
-      - targets: ['100.110.72.116:10250']
+      - targets: ['hyperbrain-oci-host:10250']
         labels:
           instance: hyperbrain-oci
       - targets: ['100.83.47.113:10250']
@@ -74,15 +79,17 @@ scrape_configs:
         labels:
           instance: mac-mini-vm
 
-  # ── CloudNativePG — exporter :9187 via the additional managed Services ───────
-  # hyperbrain-db = current primary (rw), hyperbrain-db-ro = standby(s).
-  # The ro target being down while a standby rebuilds is expected signal.
+  # ── CloudNativePG — exporter :9187 via NodePort services ───────────────────
+  # NodePorts 32187 (primary) and 32188 (replica) follow CNPG instanceRole label
+  # so they always route to the correct pod, even after switchover.
+  # Switch to hyperbrain-db:9187 / hyperbrain-db-ro:9187 (MagicDNS) once
+  # the Tailscale Kubernetes Operator is installed.
   - job_name: cnpg
     static_configs:
-      - targets: ['hyperbrain-db:9187']
+      - targets: ['100.83.47.113:32187']
         labels:
           role: primary
-      - targets: ['hyperbrain-db-ro:9187']
+      - targets: ['100.83.47.113:32188']
         labels:
           role: replica
 
