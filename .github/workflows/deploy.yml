@@ -153,9 +153,15 @@ jobs:
           kubectl rollout status deployment/postgrest -n hyperbrain --timeout=5m
           kubectl rollout status deployment/kube-state-metrics -n hyperbrain --timeout=5m
 
-      # Health check via kubectl exec — avoids depending on the Tailscale operator
-      # proxy being fully provisioned in the tailnet at deploy time.
+      # Health check via kubectl port-forward — avoids exec (no curl in JRE image)
+      # and avoids the Tailscale proxy lookup (operator may not yet be provisioned).
       - name: Health check core
         run: |
-          kubectl exec -n hyperbrain deploy/hyperbrain-core -- \
-            curl -sf http://localhost:8080/actuator/health
+          kubectl port-forward -n hyperbrain deploy/hyperbrain-core 18080:8080 &
+          PF_PID=$!
+          trap "kill $PF_PID 2>/dev/null || true" EXIT
+          for i in $(seq 1 12); do
+            curl -sf http://localhost:18080/actuator/health && break
+            echo "attempt $i…"; sleep 5
+          done
+          kill $PF_PID 2>/dev/null || true
