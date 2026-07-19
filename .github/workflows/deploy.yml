@@ -67,15 +67,25 @@ jobs:
         with:
           version: ${{ env.KUBECTL_VERSION }}
 
+      # Force Tailscale to establish the direct peer route to OCI before any
+      # kubectl call. Ephemeral peers need NAT-traversal warmup; without this
+      # the first kubectl request races against route establishment and times out.
+      - name: Warm up Tailscale route to OCI
+        run: |
+          for i in $(seq 1 12); do
+            tailscale ping --c 1 100.110.72.116 && break
+            echo "ping attempt $i failed, retrying in 5s…"
+            sleep 5
+          done
+
       - name: Configure kubeconfig
         run: |
           install -m 700 -d "$RUNNER_TEMP/kube"
           echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > "$RUNNER_TEMP/kube/config"
           chmod 600 "$RUNNER_TEMP/kube/config"
           echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
-          # Export for the current step too (>> $GITHUB_ENV only affects subsequent steps)
           export KUBECONFIG="$RUNNER_TEMP/kube/config"
-          kubectl version --request-timeout=30s
+          kubectl version --request-timeout=60s
 
       - name: Install sops
         run: |
