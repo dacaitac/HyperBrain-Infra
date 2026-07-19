@@ -107,6 +107,8 @@ jobs:
 
       # rclone.conf travels inside the env file as RCLONE_CONF_B64 (base64 of
       # the full file) and becomes the `rclone.conf` file key of the Secret.
+      # kubectl ≥1.32 disallows mixing --from-env-file with --from-file, so we
+      # build the final YAML in two steps: env-file secret → patch rclone.conf.
       - name: Sync hyperbrain-secrets from SOPS
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
@@ -121,8 +123,10 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           kubectl create secret generic hyperbrain-secrets -n hyperbrain \
             --from-env-file="$RUNNER_TEMP/secrets.stripped.env" \
-            --from-file=rclone.conf="$RUNNER_TEMP/rclone.conf" \
             --dry-run=client -o yaml | kubectl apply -f -
+          kubectl patch secret hyperbrain-secrets -n hyperbrain \
+            --type='json' \
+            -p="[{\"op\":\"add\",\"path\":\"/data/rclone.conf\",\"value\":\"$(base64 -w0 "$RUNNER_TEMP/rclone.conf")\"}]"
           rm -f "$RUNNER_TEMP/secrets.env" "$RUNNER_TEMP/secrets.stripped.env" "$RUNNER_TEMP/rclone.conf"
 
       # Idempotent re-apply of the pinned, vendored operators (CRDs first).
