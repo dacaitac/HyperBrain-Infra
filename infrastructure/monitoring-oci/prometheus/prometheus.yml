@@ -19,11 +19,9 @@ scrape_configs:
       - targets: ['100.74.180.105:9100']  # pending: mac-metrics LaunchAgent (HU-13 #18)
         labels:
           instance: mac-mini
-      # pending: node-exporter inside the Lima VM (mac-mini-vm) — fill in its
-      # tailscale IP after `tailscale up` in the VM (ADR-021 F2')
-      # - targets: ['<MAC_MINI_VM_TAILSCALE_IP>:9100']
-      #   labels:
-      #     instance: mac-mini-vm
+      - targets: ['100.81.242.46:9100']
+        labels:
+          instance: mac-mini-vm
 
   # ═══ k3s cluster (ADR-021 F8') — scraped from OUTSIDE the cluster (D7) ═══════
   # Tailnet hostnames (hyperbrain-ksm / hyperbrain-db*) are Tailscale-operator
@@ -54,10 +52,9 @@ scrape_configs:
       - targets: ['100.83.47.113:10250']
         labels:
           instance: daniel-ubuntu
-      # pending: mac-mini-vm tailscale IP (see node-exporter note above)
-      # - targets: ['<MAC_MINI_VM_TAILSCALE_IP>:10250']
-      #   labels:
-      #     instance: mac-mini-vm
+      - targets: ['100.81.242.46:10250']
+        labels:
+          instance: mac-mini-vm
 
   - job_name: kubelet-cadvisor
     scheme: https
@@ -73,10 +70,9 @@ scrape_configs:
       - targets: ['100.83.47.113:10250']
         labels:
           instance: daniel-ubuntu
-      # pending: mac-mini-vm tailscale IP (see node-exporter note above)
-      # - targets: ['<MAC_MINI_VM_TAILSCALE_IP>:10250']
-      #   labels:
-      #     instance: mac-mini-vm
+      - targets: ['100.81.242.46:10250']
+        labels:
+          instance: mac-mini-vm
 
   # ── CloudNativePG — exporter :9187 via the additional managed Services ───────
   # hyperbrain-db = current primary (rw), hyperbrain-db-ro = standby(s).
