@@ -73,6 +73,8 @@ jobs:
           echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > "$RUNNER_TEMP/kube/config"
           chmod 600 "$RUNNER_TEMP/kube/config"
           echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
+          # Export for the current step too (>> $GITHUB_ENV only affects subsequent steps)
+          export KUBECONFIG="$RUNNER_TEMP/kube/config"
           kubectl version --request-timeout=30s
 
       - name: Install sops
