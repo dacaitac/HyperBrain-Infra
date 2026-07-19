@@ -63,15 +63,10 @@ spec:
               value: https://sqs.us-east-1.amazonaws.com
             - name: SYNC_RESULTS_CONSUMER_ENABLED
               value: "true"
-            # OFF: user-commands.fifo + DLQ are defined in terraform/sqs but NOT yet
-            # applied to the AWS account (verified 2026-07-18: get-queue-url fails).
-            # Flip to true after Daniel runs terraform apply.
             - name: USER_COMMANDS_CONSUMER_ENABLED
-              value: "false"
-            # Deploy-safe default OFF (same as Compose): the hub flips it once the
-            # SentinelAPI write-back path is re-verified against the cluster core.
+              value: "true"
             - name: APP_PLANNER_DELIVERY_SCHEDULING_ENABLED
-              value: "false"
+              value: "true"
             # Enabled: greenfield DB creates new Notion pages for items without external_id;
             # items migrated from compose with stale external_ids will emit 404s (logged, non-fatal).
             - name: NOTION_SYNC_ENABLED
