@@ -49,9 +49,7 @@ resource "aws_sqs_queue" "apple_commands_results_dlq" {
 }
 
 # STATE DESYNC — created manually via AWS CLI on 2026-07-19 (not in terraform.tfstate).
-# Actual attributes differ from this definition:
-#   content_based_deduplication = true  (this file says false)
-# Before running `terraform apply`, import first:
+# Attributes now match this definition. Before running `terraform apply`, import first:
 #   terraform import aws_sqs_queue.user_commands_dlq \
 #     https://sqs.us-east-1.amazonaws.com/376129847575/user-commands-dlq.fifo
 resource "aws_sqs_queue" "user_commands_dlq" {
@@ -132,11 +130,7 @@ resource "aws_sqs_queue" "apple_commands_results" {
 # explicit MessageDeduplicationId = command_id.
 #
 # STATE DESYNC — created manually via AWS CLI on 2026-07-19 (not in terraform.tfstate).
-# Actual attributes differ from this definition:
-#   content_based_deduplication = true   (this file says false)
-#   message_retention_seconds   = 345600 (this file says 1209600)
-#   maxReceiveCount             = 5      (this file says 3)
-# Before running `terraform apply`, import first:
+# Attributes now match this definition. Before running `terraform apply`, import first:
 #   terraform import aws_sqs_queue.user_commands \
 #     https://sqs.us-east-1.amazonaws.com/376129847575/user-commands.fifo
 resource "aws_sqs_queue" "user_commands" {
