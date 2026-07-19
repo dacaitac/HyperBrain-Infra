@@ -2,8 +2,15 @@ services:
   prometheus:
     image: prom/prometheus:v3.2.1
     container_name: prometheus
+    # MagicDNS first so tailnet hostnames (hyperbrain-ksm, hyperbrain-db*)
+    # resolve from inside the container; public resolver as fallback.
+    dns:
+      - 100.100.100.100
+      - 1.1.1.1
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Whole dir (not just the yml): also carries k8s-scraper.token (gitignored,
+      # extracted per k8s/README.md) for the kubelet scrape jobs (ADR-021 F8').
+      - ./prometheus:/etc/prometheus:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

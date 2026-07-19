@@ -1,0 +1,166 @@
+# Grafana alert rules for the k3s cluster (ADR-021 F8').
+#
+# Sources:
+#   - CNPG exporter via tailnet Services (prometheus job "cnpg")
+#   - kube-state-metrics via hyperbrain-ksm (prometheus job "kube-state-metrics")
+#
+# Interim-backup staleness mechanism: there is no pushgateway and no
+# node_exporter textfile collector inside the cluster, so the CronJob emits no
+# metric of its own. kube-state-metrics already exposes
+# kube_cronjob_status_last_successful_time{cronjob="pg-dump-offsite"} — that IS
+# the "last successful backup" timestamp, with zero extra plumbing. The legacy
+# backup-stale.yml rule (NAS chain, hyperbrain_backup_last_success_timestamp)
+# stays for when daniel-ubuntu's systemd chain returns (runbook-daniel-ubuntu-join).
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: HyperBrain Cluster
+    folder: HyperBrain
+    interval: 1m
+    rules:
+      - uid: hb-cnpg-replica-lag-001
+        title: "CNPG replica lag >60s"
+        condition: threshold
+        data:
+          - refId: lag_seconds
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              expr: max(cnpg_pg_replication_lag{role="replica"})
+              instant: true
+              refId: lag_seconds
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [60]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [lag_seconds]
+                  reducer:
+                    type: last
+                  type: query
+              expression: lag_seconds
+              refId: threshold
+              type: threshold
+        # NoData here usually means the ro Service has no endpoints (standby
+        # down or rebuilding) — that is itself an incident for a 2-instance
+        # cluster whose replica is the whole mitigation (ADR-021 D3).
+        noDataState: Alerting
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: "PostgreSQL streaming replica is lagging or gone"
+          description: >
+            Replica lag: {{ $values.lag_seconds.Value }}s (RPO at risk).
+            Check: kubectl cnpg status hyperbrain-db -n hyperbrain
+          runbook_url: "https://github.com/dacaitac/HyperBrain-Infra/blob/main/docs/runbook-ladder-simulacros.md"
+        labels:
+          severity: critical
+          component: cnpg
+        isPaused: false
+
+      - uid: hb-node-notready-001
+        title: "k3s node NotReady >5m"
+        condition: threshold
+        data:
+          - refId: ready
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              expr: min by (node) (kube_node_status_condition{condition="Ready", status="true"})
+              instant: true
+              refId: ready
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [ready]
+                  reducer:
+                    type: last
+                  type: query
+              expression: ready
+              refId: threshold
+              type: threshold
+        noDataState: Alerting # ksm unreachable = cluster state unknown
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: "Node {{ $labels.node }} is NotReady — the ladder is degraded"
+          description: >
+            Node {{ $labels.node }} has been NotReady for over 5 minutes.
+            Workloads should already be on the next rung (D4); verify with:
+            kubectl get pods -n hyperbrain -o wide
+          runbook_url: "https://github.com/dacaitac/HyperBrain-Infra/blob/main/docs/runbook-ladder-simulacros.md"
+        labels:
+          severity: critical
+          component: cluster
+        isPaused: false
+
+      - uid: hb-interim-backup-stale-001
+        title: "Interim off-site backup stale (>26h)"
+        condition: threshold
+        data:
+          - refId: age_seconds
+            relativeTimeRange:
+              from: 100000
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              expr: time() - kube_cronjob_status_last_successful_time{cronjob="pg-dump-offsite", namespace="hyperbrain"}
+              instant: true
+              refId: age_seconds
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [93600] # 26 h
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [age_seconds]
+                  reducer:
+                    type: last
+                  type: query
+              expression: age_seconds
+              refId: threshold
+              type: threshold
+        noDataState: Alerting # missing metric = CronJob never succeeded / ksm down
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: "No successful pg-dump-offsite CronJob run in the last 26 hours"
+          description: >
+            Seconds since last successful interim backup:
+            {{ $values.age_seconds.Value | humanizeDuration }}.
+            Check: kubectl get jobs -n hyperbrain -l app=pg-dump-offsite
+          runbook_url: "https://github.com/dacaitac/HyperBrain-Infra/blob/main/docs/backup-restore.md"
+        labels:
+          severity: critical
+          component: backup
+        isPaused: false

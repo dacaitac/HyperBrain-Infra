@@ -1,0 +1,9 @@
+# Tailnet exposure (ADR-021 D2/F6'): `hyperbrain-gotrue` for Appsmith auth (#46).
+apiVersion: v1
+kind: Service
+metadata:
+  name: gotrue
+  namespace: hyperbrain
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: hyperbrain-gotrue

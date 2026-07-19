@@ -1,0 +1,11 @@
+# Tailnet exposure (ADR-021 D2/F6'): the Tailscale operator spawns a proxy
+# publishing this Service at hostname `hyperbrain-core` — SentinelAPI's core
+# endpoint and the CD health check resolve it over the tailnet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: hyperbrain-core
+  namespace: hyperbrain
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: hyperbrain-core

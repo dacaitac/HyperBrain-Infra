@@ -1,0 +1,44 @@
+# CNPG additional managed Services exposed to the tailnet (ADR-021 D2/F8').
+# The operator owns the default -rw/-ro Services, so exposure goes through
+# `managed.services.additional` (CNPG >= 1.24) instead of patching them:
+#   - hyperbrain-db     -> current PRIMARY (rw): 5432 for psql / the NAS backup
+#                          chain when it returns, 9187 for CNPG metrics
+#   - hyperbrain-db-ro  -> replicas only (ro): 9187 for standby lag metrics
+#     (may have no endpoints while a standby is being rebuilt — Prometheus
+#      shows the target down; that is signal, not noise)
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: hyperbrain-db
+  namespace: hyperbrain
+spec:
+  managed:
+    services:
+      additional:
+        - selectorType: rw
+          serviceTemplate:
+            metadata:
+              name: hyperbrain-db-rw-tailnet
+              annotations:
+                tailscale.com/expose: "true"
+                tailscale.com/hostname: hyperbrain-db
+            spec:
+              ports:
+                - name: postgres
+                  port: 5432
+                  targetPort: 5432
+                - name: metrics
+                  port: 9187
+                  targetPort: 9187
+        - selectorType: ro
+          serviceTemplate:
+            metadata:
+              name: hyperbrain-db-ro-tailnet
+              annotations:
+                tailscale.com/expose: "true"
+                tailscale.com/hostname: hyperbrain-db-ro
+            spec:
+              ports:
+                - name: metrics
+                  port: 9187
+                  targetPort: 9187

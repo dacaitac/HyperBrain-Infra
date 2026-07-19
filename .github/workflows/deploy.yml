@@ -1,53 +1,136 @@
+# Deploy to the k3s cluster (ADR-021 D6/F9').
+#
+# Replaces the Compose deploy on the self-hosted daniel-ubuntu runner: this CD
+# is a GitHub-hosted runner that joins the tailnet EPHEMERALLY and applies the
+# Kustomize overlay against the control plane on hyperbrain-oci — immune to
+# any of our own hosts being down (the incident that motivated the ADR).
+# The self-hosted runner never returns to the deploy path.
+#
+# Required repository/environment secrets (see k8s/README.md):
+#   TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET  Tailscale OAuth client (tag:ci)
+#   KUBECONFIG_B64                        base64 kubeconfig against 100.110.72.116:6443
+#   SOPS_AGE_KEY                          age private key matching secrets.enc.env
+#
+# Rollback (D6): re-run with the previous commit / previous image tag in
+# k8s/overlays/prod/kustomization.yaml — never via Compose.
 name: Deploy Infra
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  KUBECTL_VERSION: v1.36.2 # matches the k3s server (v1.36.2+k3s1)
+  SOPS_VERSION: v3.13.2
 
 jobs:
   deploy:
-    runs-on: [self-hosted, daniel-ubuntu]
+    runs-on: ubuntu-latest
     environment: production
     steps:
       - uses: actions/checkout@v4
+
+      # Fail fast, with a clear message, while the encrypted secrets file is
+      # not yet in the repo (the age key never left Daniel's side — see
+      # k8s/README.md "Regenerating secrets.enc.env").
+      - name: Preflight — secrets.enc.env must exist
+        run: |
+          if [ ! -f secrets.enc.env ]; then
+            echo "::error::secrets.enc.env is missing from the repo root."
+            echo "::error::Daniel must regenerate it: build a plaintext .env with the"
+            echo "::error::hyperbrain-secrets keys (k8s/README.md) and run:"
+            echo "::error::  sops --encrypt --age <AGE_PUBLIC_KEY> .env > secrets.enc.env"
+            exit 1
+          fi
+
+      - name: Migrations parity gate
+        run: scripts/k8s/sync-migrations.sh --check
+
+      - name: Join tailnet (ephemeral)
+        uses: tailscale/github-action@v3
         with:
-          # The migrations step diffs HEAD~1..HEAD; a depth-1 clone has no parent commit.
-          fetch-depth: 2
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          version: 1.98.8
 
-      # ~/hyperbrain-deploy is the persistent runtime directory on daniel-ubuntu.
-      # Its .env holds real secrets and is created once, by hand, outside of CI —
-      # this sync never touches it.
-      - name: Sync compose + migrations to the persistent deploy directory
-        run: |
-          mkdir -p ~/hyperbrain-deploy
-          rsync -a --delete --exclude '.env' docker-compose.yml infrastructure supabase scripts ~/hyperbrain-deploy/
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
 
-      - name: Apply compose changes
-        working-directory: /home/danielc/hyperbrain-deploy
+      - name: Configure kubeconfig
         run: |
-          docker compose --env-file .env pull
-          docker compose --env-file .env up -d --remove-orphans
+          install -m 700 -d "$RUNNER_TEMP/kube"
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > "$RUNNER_TEMP/kube/config"
+          chmod 600 "$RUNNER_TEMP/kube/config"
+          echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
+          kubectl version --request-timeout=30s
 
-      - name: Apply DDL to Compose PostgreSQL (idempotent)
-        working-directory: /home/danielc/hyperbrain-deploy
+      - name: Install sops
         run: |
-          TABLE_EXISTS=$(docker compose exec -T postgres psql -U hyperbrain -d hyperbrain -tAc \
-            "SELECT to_regclass('public.outbox_events') IS NOT NULL;" 2>/dev/null || echo "f")
-          if [ "${TABLE_EXISTS}" = "t" ]; then
-            echo "Domain schema already present — skipping apply-schema.sh."
-          else
-            echo "Domain schema absent — applying DDL..."
-            bash scripts/apply-schema.sh
-          fi
+          curl -fsSL -o /usr/local/bin/sops \
+            "https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64"
+          chmod +x /usr/local/bin/sops
+          sops --version
 
-      - name: Apply Supabase remote migrations (only if supabase/migrations/ changed)
+      # rclone.conf travels inside the env file as RCLONE_CONF_B64 (base64 of
+      # the full file) and becomes the `rclone.conf` file key of the Secret.
+      - name: Sync hyperbrain-secrets from SOPS
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
-          if git diff --name-only HEAD~1 HEAD | grep -q '^supabase/migrations/'; then
-            supabase db push --password "${{ secrets.DB_PASSWORD }}"
-          else
-            echo "No migration changes — skipping remote db push."
-          fi
+          set -euo pipefail
+          umask 077
+          sops -d secrets.enc.env > "$RUNNER_TEMP/secrets.env"
+          grep '^RCLONE_CONF_B64=' "$RUNNER_TEMP/secrets.env" \
+            | cut -d= -f2- | base64 -d > "$RUNNER_TEMP/rclone.conf"
+          grep -v '^RCLONE_CONF_B64=' "$RUNNER_TEMP/secrets.env" > "$RUNNER_TEMP/secrets.stripped.env"
+          kubectl create namespace hyperbrain \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic hyperbrain-secrets -n hyperbrain \
+            --from-env-file="$RUNNER_TEMP/secrets.stripped.env" \
+            --from-file=rclone.conf="$RUNNER_TEMP/rclone.conf" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          rm -f "$RUNNER_TEMP/secrets.env" "$RUNNER_TEMP/secrets.stripped.env" "$RUNNER_TEMP/rclone.conf"
 
-      - name: Health check critical services
+      # Idempotent re-apply of the pinned, vendored operators (CRDs first).
+      - name: Apply operators (CNPG + Tailscale)
         run: |
-          docker compose --env-file /home/danielc/hyperbrain-deploy/.env -f /home/danielc/hyperbrain-deploy/docker-compose.yml ps postgres | grep -q healthy
+          kubectl apply --server-side -f k8s/operators/cnpg/cnpg-1.29.2.yaml
+          kubectl apply --server-side -f k8s/operators/tailscale/tailscale-operator-1.98.8.yaml
+
+      # db-migrate is immutable and its migrations ConfigMap name is hashed:
+      # drop the finished Job so the re-apply can create the new revision.
+      - name: Apply overlay
+        run: |
+          kubectl delete job db-migrate -n hyperbrain --ignore-not-found
+          kubectl apply -k k8s/overlays/prod
+
+      - name: Wait for rollout
+        run: |
+          kubectl wait --for=condition=Ready clusters.postgresql.cnpg.io/hyperbrain-db \
+            -n hyperbrain --timeout=15m
+          kubectl wait --for=condition=complete job/db-migrate \
+            -n hyperbrain --timeout=10m
+          kubectl rollout status deployment/hyperbrain-core -n hyperbrain --timeout=10m
+          kubectl rollout status deployment/gotrue -n hyperbrain --timeout=5m
+          kubectl rollout status deployment/postgrest -n hyperbrain --timeout=5m
+          kubectl rollout status deployment/kube-state-metrics -n hyperbrain --timeout=5m
+
+      # Resolve the core's tailnet proxy through tailscale itself (no MagicDNS
+      # dependency on the runner's resolver).
+      - name: Health check core via tailnet
+        run: |
+          CORE_IP="$(tailscale ip -4 hyperbrain-core)"
+          echo "hyperbrain-core resolves to ${CORE_IP}"
+          curl -sf --retry 10 --retry-delay 15 --retry-all-errors \
+            "http://${CORE_IP}:8080/actuator/health"

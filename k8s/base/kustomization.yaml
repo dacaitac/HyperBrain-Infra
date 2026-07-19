@@ -21,6 +21,8 @@ resources:
   - db/migrate-job.yaml
   - db/migrations # generated: scripts/k8s/sync-migrations.sh (configMapGenerator)
   - backup/pg-dump-offsite-cronjob.yaml
+  - monitoring/kube-state-metrics.yaml
+  - monitoring/prometheus-scraper-rbac.yaml
   - descheduler/rbac.yaml
   - descheduler/configmap-policy.yaml
   - descheduler/cronjob.yaml

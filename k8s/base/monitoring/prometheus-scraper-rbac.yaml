@@ -1,0 +1,56 @@
+# Read-only identity for the OUT-OF-CLUSTER Prometheus (hyperbrain-oci, D7) to
+# scrape the kubelets (/metrics, /metrics/cadvisor on :10250 over the tailnet).
+# k3s kubelets use webhook authn/authz: the scrape needs a bearer token whose
+# subject can `get nodes/metrics`.
+#
+# Token extraction (one-time, by Daniel — see k8s/README.md):
+#   kubectl -n hyperbrain get secret prometheus-scraper-token \
+#     -o jsonpath='{.data.token}' | base64 -d \
+#     > infrastructure/monitoring-oci/prometheus/k8s-scraper.token   # gitignored
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-scraper
+  namespace: hyperbrain
+  labels:
+    app: prometheus-scraper
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-scraper
+  labels:
+    app: prometheus-scraper
+rules:
+  - apiGroups: [""]
+    resources: [nodes/metrics, nodes/proxy, nodes/stats]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-scraper
+  labels:
+    app: prometheus-scraper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-scraper
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-scraper
+    namespace: hyperbrain
+---
+# Long-lived token bound to the ServiceAccount (deliberate: the consumer is a
+# plain file on the OCI VM, outside the cluster; rotation = delete + re-extract)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-scraper-token
+  namespace: hyperbrain
+  annotations:
+    kubernetes.io/service-account.name: prometheus-scraper
+type: kubernetes.io/service-account-token

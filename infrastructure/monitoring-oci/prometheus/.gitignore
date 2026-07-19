@@ -1,0 +1,2 @@
+# Bearer token for kubelet scraping (extracted from the cluster, never in git)
+k8s-scraper.token

@@ -1,0 +1,9 @@
+# Tailnet exposure (ADR-021 D2/F6'): `hyperbrain-postgrest` for Appsmith (#45).
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgrest
+  namespace: hyperbrain
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: hyperbrain-postgrest

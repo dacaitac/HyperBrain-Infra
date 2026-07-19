@@ -1,7 +1,7 @@
 # Production overlay (ADR-021 D6) — the single entrypoint the CD applies:
 #   kubectl apply -k k8s/overlays/prod
-# (after kubectl apply --server-side -f k8s/operators/cnpg/cnpg-1.29.2.yaml
-#  and after creating the hyperbrain-secrets Secret — see k8s/README.md)
+# (after the vendored operators in k8s/operators/{cnpg,tailscale} and after
+#  creating the hyperbrain-secrets + operator-oauth Secrets — see k8s/README.md)
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -10,6 +10,21 @@ resources:
 
 components:
   - ../../components/ladder-affinity
+
+# Tailnet exposure lives ONLY here (never in base): annotation-based expose
+# via the Tailscale Kubernetes Operator (D2/F6'), plus the CNPG additional
+# managed Services for DB access/metrics over the tailnet (F8').
+patches:
+  - path: patches/tailnet-core.yaml
+  - path: patches/tailnet-gotrue.yaml
+  - path: patches/tailnet-postgrest.yaml
+  - path: patches/tailnet-ksm.yaml
+  - path: patches/cnpg-tailnet-services.yaml
+    target:
+      group: postgresql.cnpg.io
+      version: v1
+      kind: Cluster
+      name: hyperbrain-db
 
 # SINGLE pinning point: the CD (F9') replaces newTag with the image SHA/digest
 # of each deploy; rollback = re-apply with the previous value (D6).
