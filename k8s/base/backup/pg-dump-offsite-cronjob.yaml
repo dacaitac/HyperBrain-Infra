@@ -40,6 +40,12 @@ spec:
                 - /bin/sh
                 - -ec
                 - |
+                  # Preflight: skip gracefully if BACKUP_AGE_RECIPIENT is not yet
+                  # configured (secrets.enc.env not regenerated — see k8s/README.md).
+                  if [ -z "${BACKUP_AGE_RECIPIENT}" ]; then
+                    echo "[pg-dump-offsite] SKIP: BACKUP_AGE_RECIPIENT is empty — set it in hyperbrain-secrets and rerun."
+                    exit 0
+                  fi
                   apk add --no-cache postgresql16-client age rclone
                   today="$(date +%Y-%m-%d)"
                   dump="/tmp/hyperbrain_${today}.dump"
