@@ -1,0 +1,67 @@
+# PostgREST (Supabase minimal profile). Same image and env as Compose.
+# The Compose service could not have a healthcheck (image ships no shell);
+# in Kubernetes the kubelet probes over HTTP from outside the container,
+# so GET / works as the real probe here.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgrest
+  namespace: hyperbrain
+  labels:
+    app: postgrest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgrest
+  template:
+    metadata:
+      labels:
+        app: postgrest
+    spec:
+      containers:
+        - name: postgrest
+          image: postgrest/postgrest:v12.2.3
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            # PGRST_JWT_SECRET — see k8s/README.md
+            - secretRef:
+                name: hyperbrain-secrets
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: hyperbrain-db-app
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hyperbrain-db-app
+                  key: password
+            - name: PGRST_DB_URI
+              value: "postgres://$(DB_USERNAME):$(DB_PASSWORD)@hyperbrain-db-rw.hyperbrain.svc:5432/hyperbrain"
+            - name: PGRST_DB_SCHEMA
+              value: public
+            - name: PGRST_DB_ANON_ROLE
+              value: anon
+            - name: PGRST_SERVER_PORT
+              value: "3000"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+            failureThreshold: 5

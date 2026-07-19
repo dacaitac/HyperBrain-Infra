@@ -1,0 +1,51 @@
+# kube-descheduler as a CronJob every 15 min (ADR-021 D4/F7').
+# Image version v0.36.x tracks the k8s minor (cluster is k3s v1.36.2).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hyperbrain-descheduler
+  namespace: kube-system
+  labels:
+    app: hyperbrain-descheduler
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: hyperbrain-descheduler
+        spec:
+          restartPolicy: Never
+          serviceAccountName: hyperbrain-descheduler
+          priorityClassName: system-cluster-critical
+          containers:
+            - name: descheduler
+              image: registry.k8s.io/descheduler/descheduler:v0.36.0
+              command:
+                - /bin/descheduler
+                - --policy-config-file=/policy/policy.yaml
+                - --v=3
+              volumeMounts:
+                - name: policy
+                  mountPath: /policy
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+          volumes:
+            - name: policy
+              configMap:
+                name: hyperbrain-descheduler-policy

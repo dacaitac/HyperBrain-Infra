@@ -1,0 +1,43 @@
+name: Build Images
+
+# Multi-arch container images for the k3s cluster (ADR-021 D5/F3').
+# Currently only cnpg-pgvector; new images under images/<name>/ get their own job.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "images/**"
+      - ".github/workflows/images.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  cnpg-pgvector:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (linux/amd64, linux/arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: images/cnpg-pgvector
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/dacaitac/cnpg-pgvector:16

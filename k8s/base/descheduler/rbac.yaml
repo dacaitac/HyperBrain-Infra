@@ -1,0 +1,45 @@
+# Minimal RBAC for the descheduler CronJob (ADR-021 D4 switchback).
+# Lives in kube-system (upstream convention); note k8s/base/kustomization.yaml
+# must NOT set a global namespace for this reason.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hyperbrain-descheduler
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hyperbrain-descheduler
+rules:
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "update"]
+  - apiGroups: [""]
+    resources: ["nodes", "namespaces"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["pods/eviction"]
+    verbs: ["create"]
+  - apiGroups: ["scheduling.k8s.io"]
+    resources: ["priorityclasses"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hyperbrain-descheduler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hyperbrain-descheduler
+subjects:
+  - kind: ServiceAccount
+    name: hyperbrain-descheduler
+    namespace: kube-system

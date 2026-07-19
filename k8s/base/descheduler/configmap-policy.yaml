@@ -1,0 +1,43 @@
+# DeschedulerPolicy — the "climb back up" half of the D4 ladder (ADR-021).
+# preferredDuringScheduling affinity only acts at scheduling time; this policy
+# evicts pods sitting on a worse rung when a better one is available, so the
+# scheduler re-places them (T2 ladder test).
+#
+# Triple barrier so a CNPG instance is NEVER evicted:
+#   1. labelSelector: only pods labeled hyperbrain.dev/reschedulable=true
+#      (added by the ladder-affinity component to stateless Deployments only)
+#   2. evictLocalStoragePods: false (PG pods use local-path PVCs)
+#   3. the PDB the CNPG operator maintains over its instances
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hyperbrain-descheduler-policy
+  namespace: kube-system
+data:
+  policy.yaml: |
+    apiVersion: "descheduler/v1alpha2"
+    kind: "DeschedulerPolicy"
+    maxNoOfPodsToEvictPerNode: 2
+    profiles:
+      - name: ladder-switchback
+        pluginConfig:
+          - name: "DefaultEvictor"
+            args:
+              evictLocalStoragePods: false
+              evictSystemCriticalPods: false
+              nodeFit: true
+              labelSelector:
+                matchLabels:
+                  hyperbrain.dev/reschedulable: "true"
+          - name: "RemovePodsViolatingNodeAffinity"
+            args:
+              nodeAffinityType:
+                - "preferredDuringSchedulingIgnoredDuringExecution"
+              # Redundant with DefaultEvictor on purpose (belt and braces)
+              labelSelector:
+                matchLabels:
+                  hyperbrain.dev/reschedulable: "true"
+        plugins:
+          deschedule:
+            enabled:
+              - "RemovePodsViolatingNodeAffinity"

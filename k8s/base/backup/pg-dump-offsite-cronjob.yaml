@@ -1,0 +1,103 @@
+# INTERIM off-site backup (ADR-021 D3): daily pg_dump -> age encrypt -> rclone
+# off-site. Covers the gap while the systemd -> NAS -> off-site chain is down
+# with daniel-ubuntu. TO BE RETIRED when the host returns and the systemd chain
+# is re-pointed at the CNPG rw Service (scripts/backup/hyperbrain-backup.sh,
+# whose dump/encrypt/upload logic this reuses — daily upload here, not weekly:
+# there is no NAS tier in the interim).
+#
+# Secrets (see k8s/README.md): BACKUP_AGE_RECIPIENT, BACKUP_RCLONE_REMOTE,
+# BACKUP_OFFSITE_PATH and the `rclone.conf` file key, all in hyperbrain-secrets.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-dump-offsite
+  namespace: hyperbrain
+  labels:
+    app: pg-dump-offsite
+spec:
+  schedule: "0 3 * * *"
+  timeZone: America/Bogota
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app: pg-dump-offsite
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              # alpine + apk: postgresql16-client (pg_dump), age, rclone.
+              # Network install per run is the accepted trade-off of the
+              # interim (no custom backup image to maintain and then retire).
+              image: alpine:3.20
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  apk add --no-cache postgresql16-client age rclone
+                  today="$(date +%Y-%m-%d)"
+                  dump="/tmp/hyperbrain_${today}.dump"
+                  echo "[pg-dump-offsite] dumping ${PGDATABASE} @ ${PGHOST}"
+                  pg_dump --format=custom --compress=9 --file="${dump}" "${PGDATABASE}"
+                  echo "[pg-dump-offsite] encrypting for ${BACKUP_AGE_RECIPIENT}"
+                  age -r "${BACKUP_AGE_RECIPIENT}" -o "${dump}.age" "${dump}"
+                  echo "[pg-dump-offsite] uploading to ${BACKUP_RCLONE_REMOTE}:${BACKUP_OFFSITE_PATH}/"
+                  rclone --config /etc/rclone/rclone.conf copy \
+                    "${dump}.age" "${BACKUP_RCLONE_REMOTE}:${BACKUP_OFFSITE_PATH}/"
+                  echo "[pg-dump-offsite] done: hyperbrain_${today}.dump.age"
+              env:
+                - name: PGHOST
+                  value: hyperbrain-db-rw.hyperbrain.svc
+                - name: PGPORT
+                  value: "5432"
+                - name: PGDATABASE
+                  value: hyperbrain
+                # Superuser: dumps every schema regardless of ownership
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: hyperbrain-db-superuser
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: hyperbrain-db-superuser
+                      key: password
+                - name: BACKUP_AGE_RECIPIENT
+                  valueFrom:
+                    secretKeyRef:
+                      name: hyperbrain-secrets
+                      key: BACKUP_AGE_RECIPIENT
+                - name: BACKUP_RCLONE_REMOTE
+                  valueFrom:
+                    secretKeyRef:
+                      name: hyperbrain-secrets
+                      key: BACKUP_RCLONE_REMOTE
+                - name: BACKUP_OFFSITE_PATH
+                  valueFrom:
+                    secretKeyRef:
+                      name: hyperbrain-secrets
+                      key: BACKUP_OFFSITE_PATH
+              volumeMounts:
+                - name: rclone-conf
+                  mountPath: /etc/rclone
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+          volumes:
+            - name: rclone-conf
+              secret:
+                secretName: hyperbrain-secrets
+                items:
+                  - key: rclone.conf
+                    path: rclone.conf

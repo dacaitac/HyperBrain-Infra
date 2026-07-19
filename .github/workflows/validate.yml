@@ -16,6 +16,27 @@ jobs:
           POSTGRES_DB: hyperbrain
           JWT_SECRET: placeholder-jwt-secret-for-compose-config-validation-only
 
+  validate-k8s:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Committed copy of supabase/migrations must match the source (ADR-021 F4')
+      - name: Migrations parity (kustomize configMapGenerator copy)
+        run: scripts/k8s/sync-migrations.sh --check
+
+      - name: Kustomize render (prod overlay)
+        run: kubectl kustomize k8s/overlays/prod > /dev/null
+
+      - name: Shell syntax check
+        run: |
+          bash -n scripts/apple-cleanup.sh
+          bash -n scripts/k8s/purge-sqs.sh
+          bash -n scripts/k8s/join-daniel-ubuntu.sh
+          bash -n scripts/k8s/sync-migrations.sh
+          bash -n infrastructure/mac-mini-vm/join-node.sh
+          bash -n k8s/base/db/apply-migrations.sh
+
   validate-terraform:
     runs-on: ubuntu-latest
     steps:

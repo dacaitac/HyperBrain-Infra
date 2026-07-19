@@ -1,0 +1,71 @@
+# =============================================================================
+# Lima VM "hyperbrain-k3s" — Linux arm64 worker node on the Mac Mini (ADR-021 D5, F2')
+#
+# macOS cannot run Linux pods natively; this VM is the k3s worker peldano
+# `ladder-tier=mac-mini` of the D4 ladder. Hard limits (4 vCPU / 8 GiB / 80 GiB)
+# protect SentinelAPI and Ollama-MLX running natively on the host.
+#
+# Create + start:   limactl start --name=hyperbrain-k3s infrastructure/mac-mini-vm/lima.yaml
+# Autostart:        com.hyperbrain.k3s-vm.plist (LaunchAgent, same pattern as SentinelAPI)
+#
+# Post-boot steps (interactive, performed by the hub — NOT automated here):
+#   1. limactl shell hyperbrain-k3s sudo tailscale up   # interactive auth in the browser
+#   2. Copy join-node.sh into the VM and run it with the k3s token:
+#        limactl copy infrastructure/mac-mini-vm/join-node.sh hyperbrain-k3s:/tmp/join-node.sh
+#        limactl shell hyperbrain-k3s -- sudo env K3S_TOKEN=<token> \
+#          bash /tmp/join-node.sh mac-mini-vm mac-mini
+#      (the join needs the token and the VM's own tailscale IP, both unknown at
+#       provisioning time — that is why k3s is not installed here)
+# =============================================================================
+
+vmType: "vz"
+os: "Linux"
+arch: "aarch64"
+
+images:
+  # Ubuntu 24.04 LTS (noble) server cloud image, arm64
+  - location: "https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-arm64.img"
+    arch: "aarch64"
+
+# Hard resource limits (ADR-021 D5): the VM must never starve the host services.
+cpus: 4
+memory: "8GiB"
+disk: "80GiB"
+
+# No host mounts: the VM is a disposable worker node; its death is exactly the
+# T1 ladder test. All state that matters is replicated by CNPG or lives in git.
+mounts: []
+
+# k3s ships its own containerd — disable Lima's.
+containerd:
+  system: false
+  user: false
+
+provision:
+  # Install Tailscale from the official apt repository (RNF-09: the tailnet is
+  # the cluster underlay, ADR-021 D2). NO `tailscale up` here: authentication
+  # is interactive and is performed by the hub after first boot (see header).
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+      if command -v tailscale >/dev/null 2>&1; then
+        exit 0
+      fi
+      export DEBIAN_FRONTEND=noninteractive
+      mkdir -p /usr/share/keyrings
+      curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg \
+        -o /usr/share/keyrings/tailscale-archive-keyring.gpg
+      curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list \
+        -o /etc/apt/sources.list.d/tailscale.list
+      apt-get update
+      apt-get install -y tailscale
+      systemctl enable --now tailscaled
+  # Prerequisites for the k3s agent install performed later by join-node.sh.
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get install -y curl open-iscsi

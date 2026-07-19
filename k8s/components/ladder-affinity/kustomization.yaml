@@ -1,0 +1,10 @@
+# Kustomize Component: Daniel's expansion ladder (ADR-021 D4).
+# THE ONLY PLACE where the ladder weights live. Applied to every stateless
+# Deployment of the overlay; the CNPG Cluster carries its OWN (inverted)
+# affinity in k8s/base/db/cluster.yaml — deliberately not this one.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+patches:
+  - path: affinity-patch.yaml
+    target:
+      kind: Deployment

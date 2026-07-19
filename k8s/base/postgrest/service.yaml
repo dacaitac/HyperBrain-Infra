@@ -1,0 +1,16 @@
+# Port 3001 was a Compose-host quirk (grafana owned 3000 on daniel-ubuntu);
+# inside the cluster the Service exposes the canonical 3000.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgrest
+  namespace: hyperbrain
+  labels:
+    app: postgrest
+spec:
+  selector:
+    app: postgrest
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

@@ -1,0 +1,48 @@
+# Strategic-merge patch applied to all Deployments (name below is ignored:
+# the component's `target: kind: Deployment` selects the real objects).
+#
+# (a) reschedulable=true opts the pod into the descheduler's switchback scope
+# (b) ladder weights: daniel-ubuntu=100 > mac-mini=60 > oci=30 (D4) — failover
+#     "down the ladder" is pure scheduling, no runbook
+# (c) aggressive NoExecute tolerations (60s, default is 300s): a dead node
+#     drains its pods to the next rung within a minute
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: _ladder-affinity-target_
+spec:
+  template:
+    metadata:
+      labels:
+        hyperbrain.dev/reschedulable: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: hyperbrain.dev/ladder-tier
+                    operator: In
+                    values: ["daniel-ubuntu"]
+            - weight: 60
+              preference:
+                matchExpressions:
+                  - key: hyperbrain.dev/ladder-tier
+                    operator: In
+                    values: ["mac-mini"]
+            - weight: 30
+              preference:
+                matchExpressions:
+                  - key: hyperbrain.dev/ladder-tier
+                    operator: In
+                    values: ["oci"]
+      tolerations:
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 60
+        - key: node.kubernetes.io/unreachable
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 60

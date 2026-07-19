@@ -1,0 +1,87 @@
+# GoTrue (Supabase Auth, minimal profile per ADR-006/ADR-021 F6').
+# Same image and env as the Compose service. DB credentials come from the
+# CNPG-generated Secret hyperbrain-db-app, interpolated into the URL with
+# $(VAR) expansion (CNPG passwords are URI-safe alphanumerics).
+# Note: GoTrue needs the `auth` schema (created by migration
+# 20260704120000 via the db-migrate Job) — it crash-loops harmlessly until
+# the Job has run.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gotrue
+  namespace: hyperbrain
+  labels:
+    app: gotrue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gotrue
+  template:
+    metadata:
+      labels:
+        app: gotrue
+    spec:
+      containers:
+        - name: gotrue
+          image: supabase/gotrue:v2.151.0
+          ports:
+            - name: http
+              containerPort: 9999
+          envFrom:
+            # GOTRUE_JWT_SECRET — see k8s/README.md
+            - secretRef:
+                name: hyperbrain-secrets
+          env:
+            - name: GOTRUE_API_HOST
+              value: 0.0.0.0
+            - name: PORT
+              value: "9999"
+            - name: GOTRUE_DB_DRIVER
+              value: postgres
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: hyperbrain-db-app
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hyperbrain-db-app
+                  key: password
+            - name: GOTRUE_DB_DATABASE_URL
+              value: "postgres://$(DB_USERNAME):$(DB_PASSWORD)@hyperbrain-db-rw.hyperbrain.svc:5432/hyperbrain?search_path=auth"
+            # Same placeholders as Compose; real URLs arrive with Appsmith auth (#46)
+            - name: GOTRUE_SITE_URL
+              value: http://localhost:3000
+            - name: API_EXTERNAL_URL
+              value: http://localhost:9999
+            - name: GOTRUE_URI_ALLOW_LIST
+              value: ""
+            - name: GOTRUE_DISABLE_SIGNUP
+              value: "false"
+            - name: GOTRUE_JWT_EXP
+              value: "3600"
+            - name: GOTRUE_JWT_DEFAULT_GROUP_NAME
+              value: authenticated
+            - name: GOTRUE_MAILER_AUTOCONFIRM
+              value: "true"
+            - name: GOTRUE_SMS_AUTOCONFIRM
+              value: "true"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            failureThreshold: 5

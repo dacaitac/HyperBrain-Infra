@@ -1,0 +1,18 @@
+# Production overlay (ADR-021 D6) — the single entrypoint the CD applies:
+#   kubectl apply -k k8s/overlays/prod
+# (after kubectl apply --server-side -f k8s/operators/cnpg/cnpg-1.29.2.yaml
+#  and after creating the hyperbrain-secrets Secret — see k8s/README.md)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+components:
+  - ../../components/ladder-affinity
+
+# SINGLE pinning point: the CD (F9') replaces newTag with the image SHA/digest
+# of each deploy; rollback = re-apply with the previous value (D6).
+images:
+  - name: ghcr.io/dacaitac/hyperbrain-core
+    newTag: latest

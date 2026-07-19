@@ -1,0 +1,18 @@
+# ClusterIP by default (ADR-021 D2): nothing listens outside the tailnet.
+# Tailnet exposure for SentinelAPI (REST core endpoint) arrives with the
+# Tailscale Kubernetes Operator in F6' — annotated on this Service, not by
+# opening node ports.
+apiVersion: v1
+kind: Service
+metadata:
+  name: hyperbrain-core
+  namespace: hyperbrain
+  labels:
+    app: hyperbrain-core
+spec:
+  selector:
+    app: hyperbrain-core
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

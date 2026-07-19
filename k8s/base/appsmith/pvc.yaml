@@ -1,0 +1,18 @@
+# PREPARED, NOT DEPLOYED (Sprint 3 #45).
+# local-path is node-local: the PVC pins appsmith to the node where it first
+# schedules (WaitForFirstConsumer). Acceptable for a dashboard — its state is
+# re-importable from the exported app JSON.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: appsmith-stacks
+  namespace: hyperbrain
+  labels:
+    app: appsmith
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi

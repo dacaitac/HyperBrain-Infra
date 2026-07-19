@@ -1,0 +1,6 @@
+# All HyperBrain workloads live here (ADR-021). The descheduler (kube-system)
+# and the CNPG operator (cnpg-system) are the only pieces outside.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hyperbrain

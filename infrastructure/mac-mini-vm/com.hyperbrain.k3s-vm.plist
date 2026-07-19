@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchAgent: autostart the "hyperbrain-k3s" Lima VM (k3s worker, ADR-021 F2').
+  Same pattern as com.hyperbrain.sentinelapi.plist.
+
+  Install (performed by Daniel, never by the AI):
+    cp com.hyperbrain.k3s-vm.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.hyperbrain.k3s-vm.plist
+
+  `limactl start` exits 0 once the VM is up (the VM keeps running on its own);
+  KeepAlive/SuccessfulExit=false retries only on failed starts.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.hyperbrain.k3s-vm</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/limactl</string>
+        <string>start</string>
+        <string>hyperbrain-k3s</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- limactl shells out to helpers (sshocker, vz drivers) resolved via PATH -->
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <!-- Retry only when `limactl start` fails (non-zero exit) -->
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/danielc/Library/Logs/hyperbrain/k3s-vm.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/danielc/Library/Logs/hyperbrain/k3s-vm.stderr.log</string>
+</dict>
+</plist>

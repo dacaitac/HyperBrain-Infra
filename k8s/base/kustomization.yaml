@@ -1,0 +1,33 @@
+# HyperBrain base (ADR-021 D6): everything the prod overlay deploys.
+# NO global `namespace:` transformer on purpose — descheduler resources live
+# in kube-system while the app lives in hyperbrain; each manifest carries its
+# explicit namespace instead.
+#
+# Excluded on purpose:
+#   - appsmith/   -> prepared, arrives with Sprint 3 #45 (add its 3 files here)
+#   - ../operators/cnpg -> applied separately, before this (CRDs first)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - core/deployment.yaml
+  - core/service.yaml
+  - gotrue/deployment.yaml
+  - gotrue/service.yaml
+  - postgrest/deployment.yaml
+  - postgrest/service.yaml
+  - db/cluster.yaml
+  - db/migrate-job.yaml
+  - db/migrations # generated: scripts/k8s/sync-migrations.sh (configMapGenerator)
+  - backup/pg-dump-offsite-cronjob.yaml
+  - descheduler/rbac.yaml
+  - descheduler/configmap-policy.yaml
+  - descheduler/cronjob.yaml
+
+configMapGenerator:
+  # Runner script for the db-migrate Job
+  - name: db-migrate-runner
+    namespace: hyperbrain
+    files:
+      - db/apply-migrations.sh

@@ -1,0 +1,71 @@
+# CNPG Cluster — the heart of ADR-021 (D3): 2 instances, streaming replica,
+# automatic failover. Greenfield bootstrap: initdb + db-migrate Job (17
+# migrations); no data to restore.
+#
+# NODE AFFINITY IS DELIBERATELY INVERTED vs the D4 ladder
+# (ladder: daniel-ubuntu=100 > mac-mini=60 > oci=30):
+#   daniel-ubuntu=100, oci=60, mac-mini=10
+# With required anti-affinity between the 2 instances, the pair lands on the
+# two best-scored *distinct* nodes — this ordering keeps the standby OFF-SITE
+# in OCI (surviving a LAN-wide outage, the exact incident that motivated the
+# ADR) instead of co-located with the primary's LAN peer (mac-mini).
+# The descheduler never touches these pods (no `reschedulable` label +
+# evictLocalStoragePods=false + operator-managed PDB — the triple barrier).
+# Primary switchback to the best rung is a manual `kubectl cnpg promote` (D4).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: hyperbrain-db
+  namespace: hyperbrain
+spec:
+  instances: 2
+
+  # Multi-arch custom operand image (pgvector on CNPG base) — images/cnpg-pgvector
+  imageName: ghcr.io/dacaitac/cnpg-pgvector:16
+
+  # Needed by the db-migrate Job (extensions/roles migration requires superuser);
+  # the operator generates Secret hyperbrain-db-superuser (postgres credentials).
+  enableSuperuserAccess: true
+
+  bootstrap:
+    initdb:
+      database: hyperbrain
+      owner: hyperbrain
+      # No explicit secret: the operator generates `hyperbrain-db-app`
+      # (username/password) — the cleanest CNPG path, no out-of-band secret.
+      # Core/GoTrue/PostgREST read their DB credentials from it.
+
+  # Durability across nodes comes from streaming replication, not from storage
+  # (ADR-021 D3): local-path keeps data on each node's local disk.
+  storage:
+    storageClass: local-path
+    size: 10Gi
+
+  primaryUpdateStrategy: unsupervised
+
+  affinity:
+    # Never two PG instances on the same node
+    enablePodAntiAffinity: true
+    podAntiAffinityType: required
+    topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: hyperbrain.dev/ladder-tier
+                operator: In
+                values: ["daniel-ubuntu"]
+        # oci above mac-mini ON PURPOSE (see header): standby must be off-site
+        - weight: 60
+          preference:
+            matchExpressions:
+              - key: hyperbrain.dev/ladder-tier
+                operator: In
+                values: ["oci"]
+        - weight: 10
+          preference:
+            matchExpressions:
+              - key: hyperbrain.dev/ladder-tier
+                operator: In
+                values: ["mac-mini"]
