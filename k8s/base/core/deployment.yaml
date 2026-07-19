@@ -72,9 +72,10 @@ spec:
             # SentinelAPI write-back path is re-verified against the cluster core.
             - name: APP_PLANNER_DELIVERY_SCHEDULING_ENABLED
               value: "false"
-            # OFF until the Notion re-link issue (greenfield DB: old page_ids are gone)
+            # Enabled: greenfield DB creates new Notion pages for items without external_id;
+            # items migrated from compose with stale external_ids will emit 404s (logged, non-fatal).
             - name: NOTION_SYNC_ENABLED
-              value: "false"
+              value: "true"
             - name: NOTION_TASKS_DATA_SOURCE_ID
               value: 1bf8bc9c5d918171b7ea000b7e326082
             - name: NOTION_CYCLES_DATA_SOURCE_ID
