@@ -48,6 +48,12 @@ resource "aws_sqs_queue" "apple_commands_results_dlq" {
   tags = local.common_tags
 }
 
+# STATE DESYNC — created manually via AWS CLI on 2026-07-19 (not in terraform.tfstate).
+# Actual attributes differ from this definition:
+#   content_based_deduplication = true  (this file says false)
+# Before running `terraform apply`, import first:
+#   terraform import aws_sqs_queue.user_commands_dlq \
+#     https://sqs.us-east-1.amazonaws.com/376129847575/user-commands-dlq.fifo
 resource "aws_sqs_queue" "user_commands_dlq" {
   name                        = "user-commands-dlq.fifo"
   fifo_queue                  = true
@@ -124,6 +130,15 @@ resource "aws_sqs_queue" "apple_commands_results" {
 # User commands iOS -> core via SentinelAPI (HU-01b #66): replan trigger and
 # Sleep Score input. FIFO with MessageGroupId=user-commands; deduplication via
 # explicit MessageDeduplicationId = command_id.
+#
+# STATE DESYNC — created manually via AWS CLI on 2026-07-19 (not in terraform.tfstate).
+# Actual attributes differ from this definition:
+#   content_based_deduplication = true   (this file says false)
+#   message_retention_seconds   = 345600 (this file says 1209600)
+#   maxReceiveCount             = 5      (this file says 3)
+# Before running `terraform apply`, import first:
+#   terraform import aws_sqs_queue.user_commands \
+#     https://sqs.us-east-1.amazonaws.com/376129847575/user-commands.fifo
 resource "aws_sqs_queue" "user_commands" {
   name                        = "user-commands.fifo"
   fifo_queue                  = true
