@@ -48,6 +48,9 @@ jobs:
       - name: Migrations parity gate
         run: scripts/k8s/sync-migrations.sh --check
 
+      - name: Add host tools to PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Configure kubeconfig
         run: |
           install -m 700 -d "$RUNNER_TEMP/kube"
