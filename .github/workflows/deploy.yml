@@ -59,6 +59,9 @@ jobs:
           echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
           export KUBECONFIG="$RUNNER_TEMP/kube/config"
           kubectl version --request-timeout=60s
+          # Persist kubeconfig on the runner host so kubectl works out-of-band.
+          install -m 700 -d "$HOME/.kube"
+          cp "$RUNNER_TEMP/kube/config" "$HOME/.kube/config"
 
       # rclone.conf travels inside the env file as RCLONE_CONF_B64 (base64 of
       # the full file) and becomes the `rclone.conf` file key of the Secret.
