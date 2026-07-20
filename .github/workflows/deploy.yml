@@ -1,15 +1,13 @@
 # Deploy to the k3s cluster (ADR-021 D6/F9').
 #
-# Replaces the Compose deploy on the self-hosted daniel-ubuntu runner: this CD
-# is a GitHub-hosted runner that joins the tailnet EPHEMERALLY and applies the
-# Kustomize overlay against the control plane on hyperbrain-oci — immune to
-# any of our own hosts being down (the incident that motivated the ADR).
-# The self-hosted runner never returns to the deploy path.
+# Runs on the self-hosted daniel-ubuntu runner, which is already a Tailscale
+# node with a permanent direct route to hyperbrain-oci (100.110.72.116:6443).
+# No ephemeral Tailscale join needed — and it was the source of recurring ACL
+# timeouts that blocked deploy on TCP 6443 despite ICMP succeeding.
 #
 # Required repository/environment secrets (see k8s/README.md):
-#   TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET  Tailscale OAuth client (tag:ci)
-#   KUBECONFIG_B64                        base64 kubeconfig against 100.110.72.116:6443
-#   SOPS_AGE_KEY                          age private key matching secrets.enc.env
+#   KUBECONFIG_B64   base64 kubeconfig against 100.110.72.116:6443
+#   SOPS_AGE_KEY     age private key matching secrets.enc.env
 #
 # Rollback (D6): re-run with the previous commit / previous image tag in
 # k8s/overlays/prod/kustomization.yaml — never via Compose.
@@ -27,13 +25,9 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
-env:
-  KUBECTL_VERSION: v1.36.2 # matches the k3s server (v1.36.2+k3s1)
-  SOPS_VERSION: v3.13.2
-
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, daniel-ubuntu]
     environment: production
     steps:
       - uses: actions/checkout@v4
@@ -54,30 +48,6 @@ jobs:
       - name: Migrations parity gate
         run: scripts/k8s/sync-migrations.sh --check
 
-      - name: Join tailnet (ephemeral)
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-          version: 1.98.8
-
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: ${{ env.KUBECTL_VERSION }}
-
-      # Force Tailscale to establish the direct peer route to OCI before any
-      # kubectl call. Ephemeral peers need NAT-traversal warmup; without this
-      # the first kubectl request races against route establishment and times out.
-      - name: Warm up Tailscale route to OCI
-        run: |
-          for i in $(seq 1 12); do
-            tailscale ping --c 1 100.110.72.116 && break
-            echo "ping attempt $i failed, retrying in 5s…"
-            sleep 5
-          done
-
       - name: Configure kubeconfig
         run: |
           install -m 700 -d "$RUNNER_TEMP/kube"
@@ -86,13 +56,6 @@ jobs:
           echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
           export KUBECONFIG="$RUNNER_TEMP/kube/config"
           kubectl version --request-timeout=60s
-
-      - name: Install sops
-        run: |
-          curl -fsSL -o /usr/local/bin/sops \
-            "https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64"
-          chmod +x /usr/local/bin/sops
-          sops --version
 
       # rclone.conf travels inside the env file as RCLONE_CONF_B64 (base64 of
       # the full file) and becomes the `rclone.conf` file key of the Secret.
