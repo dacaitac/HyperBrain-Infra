@@ -1,13 +1,15 @@
 # Deploy to the k3s cluster (ADR-021 D6/F9').
 #
-# Runs on the self-hosted daniel-ubuntu runner, which is already a Tailscale
-# node with a permanent direct route to hyperbrain-oci (100.110.72.116:6443).
-# No ephemeral Tailscale join needed — and it was the source of recurring ACL
-# timeouts that blocked deploy on TCP 6443 despite ICMP succeeding.
+# Runs on the self-hosted runner on hyperbrain-oci (the k3s control-plane node).
+# Running on OCI means: (a) kubectl connects to 127.0.0.1:6443 with no Tailscale
+# hop; (b) CI is independent of daniel-ubuntu — deploys queue normally if that
+# node is down; (c) no ephemeral Tailscale join needed (root cause of past ACL
+# timeouts where TCP 6443 was blocked despite ICMP succeeding).
 #
 # Required repository/environment secrets (see k8s/README.md):
-#   KUBECONFIG_B64   base64 kubeconfig against 100.110.72.116:6443
 #   SOPS_AGE_KEY     age private key matching secrets.enc.env
+# KUBECONFIG_B64 is no longer needed on the OCI runner (local ~/.kube/config
+# uses 127.0.0.1:6443) but kept as a fallback for any future runner migration.
 #
 # Rollback (D6): re-run with the previous commit / previous image tag in
 # k8s/overlays/prod/kustomization.yaml — never via Compose.
@@ -27,7 +29,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, daniel-ubuntu]
+    runs-on: [self-hosted, hyperbrain-oci]
     environment: production
     steps:
       - uses: actions/checkout@v4
@@ -54,14 +56,19 @@ jobs:
       - name: Configure kubeconfig
         run: |
           install -m 700 -d "$RUNNER_TEMP/kube"
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > "$RUNNER_TEMP/kube/config"
+          # On the OCI control-plane runner ~/.kube/config already exists (127.0.0.1:6443,
+          # no Tailscale hop needed). On any other runner decode from the repo secret.
+          if [ -f "$HOME/.kube/config" ]; then
+            cp "$HOME/.kube/config" "$RUNNER_TEMP/kube/config"
+          else
+            echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > "$RUNNER_TEMP/kube/config"
+            install -m 700 -d "$HOME/.kube"
+            cp "$RUNNER_TEMP/kube/config" "$HOME/.kube/config"
+          fi
           chmod 600 "$RUNNER_TEMP/kube/config"
           echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
           export KUBECONFIG="$RUNNER_TEMP/kube/config"
           kubectl version --request-timeout=60s
-          # Persist kubeconfig on the runner host so kubectl works out-of-band.
-          install -m 700 -d "$HOME/.kube"
-          cp "$RUNNER_TEMP/kube/config" "$HOME/.kube/config"
 
       # rclone.conf travels inside the env file as RCLONE_CONF_B64 (base64 of
       # the full file) and becomes the `rclone.conf` file key of the Secret.
