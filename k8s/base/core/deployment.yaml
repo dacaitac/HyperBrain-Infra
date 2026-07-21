@@ -67,6 +67,9 @@ spec:
               value: "true"
             - name: APP_PLANNER_DELIVERY_SCHEDULING_ENABLED
               value: "true"
+            # H0 adherence roll-up @Scheduled 03:30 America/Bogota over the prior day
+            - name: APP_TELEMETRY_ROLLUP_SCHEDULING_ENABLED
+              value: "true"
             # Enabled: greenfield DB creates new Notion pages for items without external_id;
             # items migrated from compose with stale external_ids will emit 404s (logged, non-fatal).
             - name: NOTION_SYNC_ENABLED
