@@ -24,3 +24,4 @@ configMapGenerator:
       - 20260710120000_execution_profile_impact_scale_1_5.sql
       - 20260710130000_prioritization_snapshot.sql
       - 20260710140000_time_block_reason.sql
+      - 20260721120000_planner_agenda_materialization.sql
