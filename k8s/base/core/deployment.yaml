@@ -70,14 +70,6 @@ spec:
             # H0 adherence roll-up @Scheduled 03:30 America/Bogota over the prior day
             - name: APP_TELEMETRY_ROLLUP_SCHEDULING_ENABLED
               value: "true"
-            # HU-01c H3: LLM propose-then-validate tier, live. The feature flag alone
-            # is not enough — SPRING_AI_MODEL_CHAT=anthropic activates the provider
-            # autoconfig (default is "none"); the API key arrives via the
-            # hyperbrain-secrets envFrom (SPRING_AI_ANTHROPIC_API_KEY, SOPS).
-            - name: APP_COGNITIVE_LLM_PROPOSE_ENABLED
-              value: "true"
-            - name: SPRING_AI_MODEL_CHAT
-              value: anthropic
             # Enabled: greenfield DB creates new Notion pages for items without external_id;
             # items migrated from compose with stale external_ids will emit 404s (logged, non-fatal).
             - name: NOTION_SYNC_ENABLED
