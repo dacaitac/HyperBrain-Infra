@@ -102,7 +102,10 @@ services:
         condition: service_healthy
     environment:
       PGRST_DB_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
-      PGRST_DB_SCHEMA: public
+      # ADR-025 D1: PostgREST exposes ONLY the `api` schema of read-model views. No
+      # public table is reachable over HTTP; the views (security_invoker) qualify
+      # their base tables as public.<table>, so no search_path change is needed.
+      PGRST_DB_SCHEMA: api
       PGRST_DB_ANON_ROLE: ${PGRST_DB_ANON_ROLE:-anon}
       PGRST_JWT_SECRET: ${JWT_SECRET}
       PGRST_SERVER_PORT: 3000

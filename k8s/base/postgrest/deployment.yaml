@@ -42,8 +42,12 @@ spec:
                   key: password
             - name: PGRST_DB_URI
               value: "postgres://$(DB_USERNAME):$(DB_PASSWORD)@hyperbrain-db-rw.hyperbrain.svc:5432/hyperbrain"
+            # ADR-025 D1: PostgREST exposes ONLY the `api` schema of read-model views.
+            # No public table is reachable over HTTP; the views (security_invoker)
+            # qualify their base tables as `public.<table>` explicitly, so no
+            # search_path change is needed here.
             - name: PGRST_DB_SCHEMA
-              value: public
+              value: api
             - name: PGRST_DB_ANON_ROLE
               value: anon
             - name: PGRST_SERVER_PORT
