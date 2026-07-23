@@ -113,6 +113,13 @@ jobs:
             -n hyperbrain --timeout=15m
           kubectl wait --for=condition=complete job/db-migrate \
             -n hyperbrain --timeout=10m
+          # Reload PostgREST's schema cache AFTER the migration applied. `apply -k`
+          # starts the PostgREST rollout in parallel with the db-migrate Job, so new
+          # pods can load the schema before the migration created it (they'd serve a
+          # stale/empty surface until the next reload). Restarting once the Job is
+          # complete guarantees PostgREST reflects the just-applied schema (e.g. the
+          # `api` read-model surface, ADR-025). PostgREST is stateless; restart is ~seconds.
+          kubectl rollout restart deployment/postgrest -n hyperbrain
           kubectl rollout status deployment/hyperbrain-core -n hyperbrain --timeout=10m
           kubectl rollout status deployment/gotrue -n hyperbrain --timeout=5m
           kubectl rollout status deployment/postgrest -n hyperbrain --timeout=5m
