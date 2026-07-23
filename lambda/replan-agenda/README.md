@@ -32,7 +32,7 @@ Prerequisite: `terraform/sqs` applied (`user-commands.fifo` exists).
 
 ```bash
 # 1. Create the bearer token in SSM (SecureString, never in Terraform state / git).
-#    Use this same value in the caller (SentinelAPI, Appsmith shortcut, etc.).
+#    Use this same value in the caller (SentinelAPI, iOS Shortcut, etc.).
 aws ssm put-parameter --name /hyperbrain/replan/token \
   --type SecureString --value "$(openssl rand -hex 32)" --overwrite
 
@@ -64,7 +64,7 @@ aws lambda update-function-configuration --function-name replan-agenda \
   --description "token rotated $(date -u +%F)"
 ```
 
-After rotating, update the token in every caller (SentinelAPI `.env`, Appsmith variable, etc.).
+After rotating, update the token in every caller (SentinelAPI `.env`, iOS Shortcut, etc.).
 
 ## Metrics
 

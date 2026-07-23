@@ -27,7 +27,6 @@ docker compose ps
 
 ```bash
 docker compose --profile app up -d      # + HyperBrain-core (CI/integración)
-docker compose --profile ui up -d       # + Appsmith (dashboards 4DX)
 docker compose --profile email up -d    # + Inbucket (testing de email GoTrue)
 ```
 
@@ -155,4 +154,4 @@ contiene las reglas de operación, migraciones y gestión de secretos.
 
 > **Nota:** el contenido legacy (stack Kafka + Apache Superset del proyecto anterior "SOPFC") fue
 > eliminado al reiniciar el repo. La arquitectura vigente usa SQS ([ADR-001](https://github.com/dacaitac/HyperBrain-docs))
-> y Appsmith en lugar de Superset.
+> y una app iOS nativa ([ADR-024](https://github.com/dacaitac/HyperBrain-docs)) en lugar de Superset/Appsmith.

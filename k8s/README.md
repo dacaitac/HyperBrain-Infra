@@ -90,7 +90,10 @@ sops --encrypt --age <AGE_PUBLIC_KEY> .env > secrets.enc.env
 - `components/ladder-affinity/` is the **only** place with the D4 ladder
   weights for stateless workloads; the CNPG Cluster carries its own inverted
   weights (standby off-site) in `base/db/cluster.yaml`.
-- `base/appsmith/` is prepared but excluded from the build until Sprint 3 #45.
+- Appsmith was decommissioned (ADR-024, #14): the 4DX dashboards/config panel now
+  live in `HyperBrain-ios-App`, a native iOS app that reads GoTrue/PostgREST
+  directly over the tailnet (same read-models-only invariant, ADR-022 D2).
+  `base/appsmith/` and `overlays/prod/patches/tailnet-appsmith.yaml` no longer exist.
 - Descheduler runs in `kube-system`; do not add a global `namespace:` to the
   base kustomization.
 - Rollback (D6): re-apply the previous manifest / previous `newTag` in

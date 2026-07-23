@@ -176,18 +176,6 @@ services:
       retries: 5
       start_period: 60s
 
-  appsmith:
-    profiles: [ui]
-    image: appsmith/appsmith-ce:latest
-    container_name: hyperbrain-appsmith
-    restart: unless-stopped
-    ports:
-      - "${BIND_ADDRESS:-127.0.0.1}:80:80"
-      - "${BIND_ADDRESS:-127.0.0.1}:443:443"
-    volumes:
-      - appsmith_data:/appsmith-stacks
-    mem_limit: 1g
-
   inbucket:
     profiles: [email]
     image: inbucket/inbucket:3.0.4
@@ -202,5 +190,3 @@ services:
 volumes:
   postgres_data:
     name: hyperbrain-postgres-data
-  appsmith_data:
-    name: hyperbrain-appsmith-data

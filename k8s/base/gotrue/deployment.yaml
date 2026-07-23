@@ -51,7 +51,7 @@ spec:
                   key: password
             - name: GOTRUE_DB_DATABASE_URL
               value: "postgres://$(DB_USERNAME):$(DB_PASSWORD)@hyperbrain-db-rw.hyperbrain.svc:5432/hyperbrain?search_path=auth"
-            # Same placeholders as Compose; real URLs arrive with Appsmith auth (#46)
+            # Same placeholders as Compose; real URLs arrive with HyperBrain-ios-App auth (ADR-024)
             - name: GOTRUE_SITE_URL
               value: http://localhost:3000
             - name: API_EXTERNAL_URL

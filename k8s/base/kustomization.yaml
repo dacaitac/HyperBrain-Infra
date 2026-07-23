@@ -4,7 +4,6 @@
 # explicit namespace instead.
 #
 # Excluded on purpose:
-#   - appsmith/   -> prepared, arrives with Sprint 3 #45 (add its 3 files here)
 #   - ../operators/cnpg -> applied separately, before this (CRDs first)
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
