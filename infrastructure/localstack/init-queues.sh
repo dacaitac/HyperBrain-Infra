@@ -1,6 +1,6 @@
 #!/bin/sh
-# Creates the 12 SQS queues defined in ADR-001 (+ apple-commands-results ADR-010,
-# + user-commands HU-01b #66).
+# Creates the 14 SQS queues defined in ADR-001 (+ apple-commands-results ADR-010,
+# + user-commands HU-01b #66, + telemetry-events ADR-016 #59).
 # Idempotent: create-queue returns existing URL if queue already exists.
 # Runs inside the sqs-init container (amazon/aws-cli) after LocalStack is healthy.
 set -eu
@@ -45,6 +45,7 @@ create_queue "apple-commands-results-dlq.fifo" --attributes "FifoQueue=true,Cont
 create_queue "user-commands-dlq.fifo" --attributes "FifoQueue=true,ContentBasedDeduplication=false,MessageRetentionPeriod=1209600,VisibilityTimeout=30"
 create_queue "core-events-dlq" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=30"
 create_queue "ia-jobs-dlq" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=120"
+create_queue "telemetry-events-dlq" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=30"
 
 # Main queues — FIFO queues use explicit MessageDeduplicationId (ContentBasedDeduplication=false)
 create_queue "sync-events.fifo" --attributes "FifoQueue=true,ContentBasedDeduplication=false,MessageRetentionPeriod=1209600,VisibilityTimeout=30"
@@ -53,6 +54,7 @@ create_queue "apple-commands-results.fifo" --attributes "FifoQueue=true,ContentB
 create_queue "user-commands.fifo" --attributes "FifoQueue=true,ContentBasedDeduplication=false,MessageRetentionPeriod=1209600,VisibilityTimeout=30"
 create_queue "core-events" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=30"
 create_queue "ia-jobs" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=120"
+create_queue "telemetry-events" --attributes "MessageRetentionPeriod=1209600,VisibilityTimeout=30"
 
 # Attach redrive policies (DLQs already exist, ARNs are deterministic in LocalStack)
 set_redrive "sync-events.fifo"    "sync-events-dlq.fifo"
@@ -61,7 +63,8 @@ set_redrive "apple-commands-results.fifo" "apple-commands-results-dlq.fifo"
 set_redrive "user-commands.fifo"  "user-commands-dlq.fifo"
 set_redrive "core-events"         "core-events-dlq"
 set_redrive "ia-jobs"             "ia-jobs-dlq"
+set_redrive "telemetry-events"    "telemetry-events-dlq"
 
 echo ""
 COUNT=$(aws --endpoint-url="${ENDPOINT}" sqs list-queues --query 'length(QueueUrls)' --output text 2>/dev/null || echo "?")
-echo "=== ${COUNT}/12 queues active ==="
+echo "=== ${COUNT}/14 queues active ==="
