@@ -74,6 +74,14 @@ resource "aws_sqs_queue" "ia_jobs_dlq" {
   tags = local.common_tags
 }
 
+resource "aws_sqs_queue" "telemetry_events_dlq" {
+  name                       = "telemetry-events-dlq"
+  message_retention_seconds  = 1209600 # 14 days
+  visibility_timeout_seconds = 30
+
+  tags = local.common_tags
+}
+
 # ── Main queues ───────────────────────────────────────────────────────────────
 
 resource "aws_sqs_queue" "sync_events" {
@@ -160,6 +168,22 @@ resource "aws_sqs_queue" "ia_jobs" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.ia_jobs_dlq.arn
+    maxReceiveCount     = 3
+  })
+
+  tags = local.common_tags
+}
+
+# Raw-first telemetry ingestion from the iOS app (ADR-016, issue #59). Standard
+# queue: the TelemetryEnvelope is an opaque payload forwarded verbatim by the
+# telemetry-gateway Lambda — ordering and deduplication are not required.
+resource "aws_sqs_queue" "telemetry_events" {
+  name                       = "telemetry-events"
+  message_retention_seconds  = 1209600
+  visibility_timeout_seconds = 30
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.telemetry_events_dlq.arn
     maxReceiveCount     = 3
   })
 

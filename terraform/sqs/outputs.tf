@@ -31,6 +31,11 @@ output "ia_jobs_url" {
   value       = aws_sqs_queue.ia_jobs.url
 }
 
+output "telemetry_events_url" {
+  description = "URL of telemetry-events (SQS_TELEMETRY_EVENTS_URL)"
+  value       = aws_sqs_queue.telemetry_events.url
+}
+
 output "sync_events_arn" {
   description = "ARN of sync-events.fifo"
   value       = aws_sqs_queue.sync_events.arn
@@ -59,6 +64,11 @@ output "core_events_arn" {
 output "ia_jobs_arn" {
   description = "ARN of ia-jobs"
   value       = aws_sqs_queue.ia_jobs.arn
+}
+
+output "telemetry_events_arn" {
+  description = "ARN of telemetry-events"
+  value       = aws_sqs_queue.telemetry_events.arn
 }
 
 output "hyperbrain_core_iam_user" {
