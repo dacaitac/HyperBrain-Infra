@@ -33,6 +33,8 @@ Thumbs.db
 *.tfstate
 *.tfstate.backup
 *.tfplan
+tfplan
+tfplan.*
 terraform.tfvars
 
 # Python bytecode (lambda handlers)
