@@ -1,6 +1,11 @@
 name: Validate Infra
 
-on: [push]
+# Branches only. Tag pushes carry no reviewable change — archive tags in
+# particular point at historical commits that were never meant to pass.
+on:
+  push:
+    branches:
+      - '**'
 
 jobs:
   validate-compose:
