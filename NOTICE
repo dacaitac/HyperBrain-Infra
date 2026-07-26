@@ -1,0 +1,39 @@
+HyperBrain-Infra
+Copyright (c) 2026 Daniel Caita
+
+Este producto está licenciado bajo la GNU Affero General Public License,
+versión 3 (AGPLv3). El texto completo de la licencia se encuentra en el
+archivo LICENSE, en la raíz de este repositorio.
+
+--------------------------------------------------------------------------------
+Estrategia de licenciamiento (open-core)
+--------------------------------------------------------------------------------
+
+HyperBrain-Infra forma parte del ecosistema HyperBrain, que sigue un modelo
+open-core. El titular de los derechos (Daniel Caita) se reserva el derecho de
+mover componentes específicos a un licenciamiento comercial y/o cerrado en el
+futuro, sin previo aviso, mediante decisión documentada por ADR.
+
+Este posible cambio NO es retroactivo: todo lo ya publicado bajo AGPLv3
+permanece disponible bajo AGPLv3 en las versiones en que fue liberado.
+
+La capacidad de relicenciar se sostiene sobre la titularidad única de los
+derechos: las contribuciones externas se aceptan únicamente bajo el Contributor
+License Agreement (CLA) descrito en CONTRIBUTING.md / CLA.md.
+
+Ver la estrategia del ecosistema en ADR-030 y ADR-032 (repo HyperBrain-docs).
+
+--------------------------------------------------------------------------------
+Marcas
+--------------------------------------------------------------------------------
+
+La licencia AGPLv3 cubre el CÓDIGO, no la MARCA. El nombre "HyperBrain", su
+logotipo e identidad visual son marcas de Daniel Caita y NO se licencian bajo
+AGPL. Un fork es libre bajo AGPL, pero debe usar un nombre propio. Ver
+TRADEMARKS.md.
+
+--------------------------------------------------------------------------------
+Contacto
+--------------------------------------------------------------------------------
+
+Daniel Caita — i7.danielcc@gmail.com

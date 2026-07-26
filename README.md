@@ -1,6 +1,7 @@
 # HyperBrain-Infra
 
 [![Validate Infra](https://github.com/dacaitac/HyperBrain-Infra/actions/workflows/validate.yml/badge.svg)](https://github.com/dacaitac/HyperBrain-Infra/actions/workflows/validate.yml)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
 Infraestructura del ecosistema **HyperBrain**: Docker Compose, migraciones SQL (Supabase),
 colas SQS (LocalStack) y gestión de secretos (SOPS + age).
@@ -155,3 +156,11 @@ contiene las reglas de operación, migraciones y gestión de secretos.
 > **Nota:** el contenido legacy (stack Kafka + Apache Superset del proyecto anterior "SOPFC") fue
 > eliminado al reiniciar el repo. La arquitectura vigente usa SQS ([ADR-001](https://github.com/dacaitac/HyperBrain-docs))
 > y una app iOS nativa ([ADR-024](https://github.com/dacaitac/HyperBrain-docs)) en lugar de Superset/Appsmith.
+
+## Licencia
+
+HyperBrain-Infra se distribuye bajo la **GNU AGPLv3** ([`LICENSE`](LICENSE) · [`NOTICE`](NOTICE)).
+Copyright © 2026 Daniel Caita. Modelo **open-core** del ecosistema (ADR-030 / ADR-032 en
+HyperBrain-docs): posible relicenciamiento comercial futuro **sin retroactividad**. Las contribuciones
+externas requieren firmar el **CLA** ([`CLA.md`](CLA.md) · [`CONTRIBUTING.md`](CONTRIBUTING.md)). El
+nombre y la marca "HyperBrain" están reservados ([`TRADEMARKS.md`](TRADEMARKS.md)).
