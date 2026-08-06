@@ -97,11 +97,13 @@ spec:
               value: af6834d4-9fe2-42d5-a04d-cf4b5f146b5c
             - name: NOTION_TIMEBLOCKS_DATABASE_ID
               value: 0b48d06e-6773-44c0-a615-a6502bddea54
-            # Kill-switch: inbound (Notion -> core) stays OFF until the outbound
-            # path is verified E2E in prod; it will be flipped to "true" in a
-            # follow-up commit after that verification.
+            # Kill-switch flipped ON 2026-08-05: inbound ITs green (committee
+            # condition met) and core deploy e1d1951 live with the env wired.
+            # Pure-outbound E2E was not runnable (prod only had FOCUS blocks,
+            # excluded from the mirror); the hub verifies the full chain
+            # bidirectionally via inbound (USER block created from Notion).
             - name: NOTION_TIMEBLOCKS_INBOUND_ENABLED
-              value: "false"
+              value: "true"
             - name: NOTION_TIMEBLOCKS_RETENTION_DAYS
               value: "30"
             - name: SERVER_PORT
