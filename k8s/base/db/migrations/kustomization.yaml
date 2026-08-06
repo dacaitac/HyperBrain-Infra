@@ -29,3 +29,4 @@ configMapGenerator:
       - 20260723140000_adr016_telemetry_raw_first.sql
       - 20260725120000_adr027_grouped_time_block_member.sql
       - 20260730120000_buying_executable_type.sql
+      - 20260806120000_adr039_executable_absorbs_timeblock.sql
