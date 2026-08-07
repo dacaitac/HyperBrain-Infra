@@ -65,8 +65,14 @@ spec:
               value: "true"
             - name: USER_COMMANDS_CONSUMER_ENABLED
               value: "true"
+            # Paused for the ADR-040 window-model migration (core#66). The morning dispatch
+            # was materializing one block per task into the frozen core_time_block table and
+            # delivering them to Apple. Once the Planner writes TIME_BLOCK executables, an
+            # enabled dispatch would push machine-generated blocks straight into the user's
+            # real block model and mirror them to Notion mid-migration. Re-enable when the
+            # window model lands complete.
             - name: APP_PLANNER_DELIVERY_SCHEDULING_ENABLED
-              value: "true"
+              value: "false"
             # H0 adherence roll-up @Scheduled 03:30 America/Bogota over the prior day
             - name: APP_TELEMETRY_ROLLUP_SCHEDULING_ENABLED
               value: "true"
