@@ -1,0 +1,101 @@
+-- ADR-040 D14 (core#66, step 3): the ONLY schema change the whole ADR sanctions — the template
+-- slot a TIME_BLOCK realises. One additive, nullable column plus one partial index. Nothing else.
+--
+-- WHAT THE COLUMN IS
+--   core_executable.template_slot_id names WHICH band of the day a block is: the id of the slot in
+--   the day template (TemplateSlot.id), carried by the block that realises it. It is the identity
+--   anchor of a planner block: a regeneration recognises "this is the same window as yesterday's"
+--   by its slot (D7) and the recurrence clone reuses it (D12), so a replan UPDATES the block's
+--   calendar event instead of creating a second one.
+--
+--   The hours cannot do that job. The moment a hard commitment (an AGENDA anchor, a meeting)
+--   displaces a window off its original band, its start_time no longer matches anything from the
+--   previous run — but the slot still says it is the same window of the day.
+--
+-- WHAT THE COLUMN IS NOT — the three exclusions are load-bearing, not stylistic:
+--   * NOT derived from the block's NAME. Naming is the LLM's work and it legitimately changes
+--     between runs (D8). If identity depended on the name, every good rename would look like a new
+--     block and would duplicate its EKEvent — that is bug #15, the exact failure rule #15 exists to
+--     prevent. This is why the column is TEXT holding a slot key and never a slug of the title.
+--   * NOT derived from the USER. It is a property of the template band, not of who owns the row;
+--     user_id already scopes ownership and appears in the index only as a lookup prefix.
+--   * NOT derived from the MEMBERSHIP. A window is laid down BEFORE anything is put inside it
+--     (ADR-040 window model), so an empty block is a legitimate row that must still reconcile by
+--     its slot. Deriving identity from what a block contains would make an empty window
+--     unidentifiable and would re-couple the block to the membership that ADR-039 just decoupled.
+--
+--   The value comes from sys_user.settings.planner_constants (the day template lives in settings,
+--   so correcting the template is a settings edit, not a migration). This file therefore seeds
+--   NOTHING and backfills NOTHING: no existing row can be assigned a slot without inventing one.
+--
+-- NULL IS THE NORMAL VALUE for every block that comes from no template — a USER block, a block
+-- born in Notion or in the calendar — and for every non-TIME_BLOCK executable, which is all 360
+-- rows currently in the table. The column is optional by design, not "not yet populated".
+--
+-- HOT-SAFETY (verified against production before writing this file: core_executable holds 360 live
+-- rows, 96 kB heap / 344 kB total):
+--   * ADD COLUMN ... TEXT with NO default and NO NOT NULL is a catalog-only change in PostgreSQL 11+
+--     (and would be even without the fast-default machinery): no table rewrite, no row touched. It
+--     takes ACCESS EXCLUSIVE on core_executable for the duration of the catalog update — microseconds
+--     here — so the only real exposure is waiting behind a long-running transaction, not the work
+--     itself. Existing readers see NULL.
+--   * CREATE INDEX (non-concurrent) takes SHARE, which blocks writes to core_executable while it
+--     builds. On a 96 kB heap with 22 TIME_BLOCK rows the build is sub-millisecond.
+--   * Verdict: safe on the hot table. No maintenance window, no read/write outage worth planning.
+--
+-- WHY NOT CREATE INDEX CONCURRENTLY: it is not merely unnecessary here, it is IMPOSSIBLE under the
+-- deployed runner. k8s/base/db/apply-migrations.sh applies each file with psql --single-transaction
+-- (so the migration and its infra.schema_migrations ledger row commit atomically), and
+-- CONCURRENTLY cannot run inside a transaction block — it would abort the Job with
+-- "CREATE INDEX CONCURRENTLY cannot run inside a transaction block". CONCURRENTLY earns its cost on
+-- multi-million-row tables where a SHARE lock means a real write outage; on a single-user table of
+-- 360 rows it would trade an imperceptible lock for a non-atomic migration that can leave an INVALID
+-- index behind on failure. The plain build is the correct call at this size.
+--
+-- Applied by the db-migrate Job (ADR-021 D3/F4'), which wraps this file in --single-transaction —
+-- hence NO explicit BEGIN/COMMIT here, exactly like the ADR-039 migration.
+--
+-- Reviewed and applied by Daniel. The AI never runs `supabase db push` and never applies to prod.
+--
+-- Idempotent / re-runnable: ADD COLUMN IF NOT EXISTS + CREATE INDEX IF NOT EXISTS make a second
+-- application a no-op; the ledger already prevents re-application on a migrated cluster.
+--
+-- Additive only (MVP rule): nothing is dropped, nothing is rewritten, no constraint is tightened.
+--
+-- Rollback path (manual, safe at any time — no data is derived from this column):
+--   DROP INDEX IF EXISTS public.idx_core_executable_template_slot;
+--   ALTER TABLE public.core_executable DROP COLUMN IF EXISTS template_slot_id;
+--   DELETE FROM infra.schema_migrations WHERE filename = '20260807120000_adr040_block_template_slot.sql';
+--   -- The core must be rolled back to a build that does not read/write template_slot_id first:
+--   -- the planner's block upsert names the column explicitly.
+--
+-- Mirror note (S0-07, core#66): HyperBrain-core/src/main/resources/db/migration/V1__init.sql
+-- mirrors this EXACT shape (column type/nullability, index name, index columns and predicate) so
+-- Testcontainers with ddl-auto: validate sees the same schema. Keep the two in lockstep.
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 1 — The column. TEXT, nullable, no default: catalog-only, no rewrite, no lock on existing rows.
+-- No CHECK constraint on purpose: the set of valid slot ids is the day template in
+-- sys_user.settings.planner_constants, which is user-editable configuration. Pinning it in a CHECK
+-- would turn "correct the template" into "ship a migration".
+-- ─────────────────────────────────────────────────────────────────────────────
+ALTER TABLE public.core_executable
+    ADD COLUMN IF NOT EXISTS template_slot_id TEXT;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 2 — Lookup index for the two readers of the column: the identity reconciliation (D7) and the
+-- recurrence clone (D12). Both resolve a slot within ONE user's day, hence the (user_id, slot)
+-- shape.
+--
+-- PARTIAL, and deliberately so: only planner-authored TIME_BLOCK rows ever carry a slot, so the
+-- predicate keeps out of the index every task, habit, activity and every block that comes from no
+-- template — the overwhelming majority of the table. NOT UNIQUE: the same slot legitimately repeats
+-- across days (that is precisely what the recurrence clone produces); uniqueness, where it applies,
+-- is one slot per user per DAY and that is planner business logic, not a schema constraint.
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_core_executable_template_slot
+    ON public.core_executable (user_id, template_slot_id)
+    WHERE type = 'TIME_BLOCK' AND template_slot_id IS NOT NULL;
+
+COMMENT ON COLUMN public.core_executable.template_slot_id IS
+    'ADR-040 D14: the day-template slot this TIME_BLOCK realises (TemplateSlot.id). Identity anchor for replan reconciliation (D7) and the recurrence clone (D12). NULL for every block that comes from no template and for every non-TIME_BLOCK row. Derived from sys_user.settings.planner_constants — never from the block name, its user or its membership.';
