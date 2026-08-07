@@ -73,6 +73,14 @@ spec:
             # window model lands complete.
             - name: APP_PLANNER_DELIVERY_SCHEDULING_ENABLED
               value: "false"
+            # ADR-040 D4: close what the trigger hour left behind and hand back what went
+            # undone, so the day is planned over a clean bag. Runs on every replan (before
+            # generation) and once at day close. Turning it on is a data-moving decision —
+            # its first pass closes stale blocks, re-dates overdue tasks to the current day
+            # and fails overdue habits, which clones their next occurrence and shows in the
+            # streaks. Enabled by Daniel on 2026-08-07.
+            - name: APP_CORE_OVERDUE_SWEEP_ENABLED
+              value: "true"
             # H0 adherence roll-up @Scheduled 03:30 America/Bogota over the prior day
             - name: APP_TELEMETRY_ROLLUP_SCHEDULING_ENABLED
               value: "true"
