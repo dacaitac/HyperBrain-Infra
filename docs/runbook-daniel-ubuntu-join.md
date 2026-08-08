@@ -54,7 +54,44 @@ kubectl get pods -n hyperbrain -l cnpg.io/cluster=hyperbrain-db -o wide
 # and scale to 2 again.
 ```
 
-## 3. Re-enable the NAS backup chain, retire the interim CronJob
+## 3. Backup mechanism (superseded by the Infra#28 audit, 2026-08-07)
+
+**This section originally said "re-enable the NAS/systemd chain, then retire the
+interim CronJob." That never ran, and the plan itself is now stale — do not
+follow the old steps.** The Infra#28 audit found `hyperbrain-backup.timer` on
+daniel-ubuntu **active but broken**: `BACKUP_PG_HOST` still defaults to
+`localhost`, which pointed at the docker-compose Postgres container
+(`hyperbrain-postgres`) that has been `Exited` since the move to CNPG — the
+timer has been writing **0-byte `.dump` files daily** to
+`/media/nas/HyperBrain_DBs_Backup/daily/` and failing (`systemctl status
+hyperbrain-backup.service` → `ActiveState=failed`) for at least two weeks,
+silently, because the Grafana alert for it depends on a node_exporter
+textfile metric the failing run never writes.
+
+**Decision (Infra#28):** the K8s `pg-dump-offsite` CronJob is promoted from
+*interim* to the **permanent** off-site backup mechanism — see the updated
+header comment in `k8s/base/backup/pg-dump-offsite-cronjob.yaml`. It already
+targets the CNPG `hyperbrain-db-rw` Service directly, is unaffected by which
+node holds the primary, and does not depend on daniel-ubuntu being present.
+Re-pointing the systemd/NAS chain at the cluster (the original plan below) is
+no longer necessary and would just be a second thing to keep in sync — the
+sequence executed for #28 is **backup verified (drill) → switchback (§2)**,
+not the reverse this section used to describe.
+
+**Pending action (Daniel, requires the host):** disable the broken timer so
+it stops producing misleading empty files and failed-unit noise:
+
+```bash
+sudo systemctl disable --now hyperbrain-backup.timer
+```
+
+The NAS-tier daily/weekly/monthly retention this timer provided is not
+replaced 1:1 — the CronJob is daily-only, off-site, no local NAS copy. If a
+local-disk restore tier is wanted later, re-scope it as a fresh sub-issue
+under Infra#21 rather than reviving this broken unit as-is.
+
+<details>
+<summary>Original plan (kept for history — do not execute as written)</summary>
 
 ```bash
 # On daniel-ubuntu — point the systemd chain at the cluster primary via tailnet:
@@ -64,12 +101,10 @@ sudo sed -i 's/^BACKUP_PG_HOST=.*/BACKUP_PG_HOST=hyperbrain-db/' /etc/hyperbrain
 #     -o jsonpath='{.data.password}' | base64 -d
 sudo systemctl start hyperbrain-backup.service     # manual run
 journalctl -u hyperbrain-backup.service -n 20      # verify dump OK
-
-# Then retire the interim (ADR-021 D3 says the interim is removed, in the repo,
-# not ad-hoc): delete k8s/base/backup/pg-dump-offsite-cronjob.yaml + its entry
-# in k8s/base/kustomization.yaml + the hb-interim-backup-stale-001 alert, and
-# let the CD apply it. The legacy backup-stale.yml alert (NAS chain) takes over.
+# Then retire the interim CronJob. Superseded: the interim is now permanent (above).
 ```
+
+</details>
 
 ## 4. Planned exit (maintenance on daniel-ubuntu)
 

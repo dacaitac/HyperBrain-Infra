@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars (gitignored) and fill in real values.
+aws_region    = "us-east-1"
+environment   = "prod"
+bucket_suffix = "CHANGE-ME"   # e.g. the AWS account ID — must make the bucket name globally unique

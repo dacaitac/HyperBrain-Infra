@@ -1,9 +1,9 @@
-# INTERIM off-site backup (ADR-021 D3): daily pg_dump -> age encrypt -> rclone
-# off-site. Covers the gap while the systemd -> NAS -> off-site chain is down
-# with daniel-ubuntu. TO BE RETIRED when the host returns and the systemd chain
-# is re-pointed at the CNPG rw Service (scripts/backup/hyperbrain-backup.sh,
-# whose dump/encrypt/upload logic this reuses — daily upload here, not weekly:
-# there is no NAS tier in the interim).
+# PERMANENT off-site backup (promoted from interim by Infra#28, 2026-08-07):
+# daily pg_dump -> age encrypt -> rclone off-site, targeting hyperbrain-db-rw
+# directly. Supersedes the systemd/NAS chain on daniel-ubuntu
+# (hyperbrain-backup.timer), which the #28 audit found broken (BACKUP_PG_HOST
+# still pointed at the retired docker-compose Postgres) and is being disabled,
+# not repointed — see docs/runbook-daniel-ubuntu-join.md §3.
 #
 # Secrets (see k8s/README.md): BACKUP_AGE_RECIPIENT, BACKUP_RCLONE_REMOTE,
 # BACKUP_OFFSITE_PATH and the `rclone.conf` file key, all in hyperbrain-secrets.

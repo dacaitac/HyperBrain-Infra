@@ -1,0 +1,56 @@
+# Contact points + notification policy for the "HyperBrain" folder (Infra#28).
+#
+# Root cause of the gap this closes: hb-backup-stale-001 and
+# hb-interim-backup-stale-001 (cluster-alerts.yml, backup-stale.yml) fired
+# silently for 3 CronJob runs — the rules existed but nothing consumed them,
+# because unified alerting always needs at least a default contact point, and
+# this repo never provisioned one.
+#
+# NOT YET WIRED — TODO(daniel): pick the real channel (see Infra#28 comment)
+# and replace the placeholder before copying this file to the OCI host
+# (/opt/hyperbrain/monitoring/grafana/provisioning/alerting/, not git-deployed —
+# see k8s/README.md-style note in docs/backup-restore.md). Two ready-to-fill
+# options below; delete the one you don't use.
+#
+# Deploy (manual — infrastructure/monitoring-oci is not in the K8s CD):
+#   scp infrastructure/monitoring-oci/grafana/provisioning/alerting/contactpoints.yml \
+#       ubuntu@100.110.72.116:/opt/hyperbrain/monitoring/grafana/provisioning/alerting/
+#   ssh ubuntu@100.110.72.116 'cd /opt/hyperbrain/monitoring && docker compose restart grafana'
+
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: hyperbrain-oncall
+    receivers:
+      # Option A — webhook (e.g. ntfy.sh topic, ntfy self-hosted, ifttt.com,
+      # or any HTTP endpoint Daniel already receives push notifications from).
+      - uid: hb-oncall-webhook
+        type: webhook
+        settings:
+          url: "https://TODO-replace-with-real-webhook-endpoint"
+          httpMethod: POST
+        disableResolveMessage: false
+
+      # Option B — email (requires an [smtp] section in grafana.ini + real
+      # relay credentials, neither of which exist yet in
+      # infrastructure/monitoring-oci/grafana/grafana.ini or .env — bigger
+      # lift than a webhook for a single-user MVP). Uncomment and configure
+      # smtp if this is the preferred channel instead of A.
+      # - uid: hb-oncall-email
+      #   type: email
+      #   settings:
+      #     addresses: "TODO-daniel@example.com"
+      #   disableResolveMessage: false
+
+# Single org, single folder ("HyperBrain") today: the default (root) policy
+# receiver covers every rule in cluster-alerts.yml + backup-stale.yml without
+# extra routing — no need for object_matchers until there's a second folder
+# with a different destination.
+policies:
+  - orgId: 1
+    receiver: hyperbrain-oncall
+    group_by: ["alertname"]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
