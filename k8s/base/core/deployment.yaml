@@ -55,7 +55,7 @@ spec:
                   name: hyperbrain-db-app
                   key: password
             - name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
-              value: "5"
+              value: "20"
             - name: AWS_DEFAULT_REGION
               value: us-east-1
             # Real AWS SQS in the cluster (LocalStack is dev-only, ADR-001)
